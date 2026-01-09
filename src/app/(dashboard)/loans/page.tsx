@@ -125,7 +125,7 @@ export default async function LoansPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Loans</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Loans</h1>
           <p className="text-sm text-muted-foreground">
             Manage and monitor your loan portfolio
           </p>

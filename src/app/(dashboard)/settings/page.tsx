@@ -67,7 +67,7 @@ export default function SettingsPage() {
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-medium tracking-tight">
           Settings
         </h1>
         <p className="text-sm text-muted-foreground">

@@ -18,17 +18,18 @@ export function TeamSwitcher() {
       <SidebarMenuItem>
         <Link
           href="/dashboard"
-          className={`flex h-14 items-center hover:opacity-80 transition-opacity ${
-            isCollapsed ? 'justify-center px-2' : 'justify-start px-4'
+          className={`flex items-center hover:opacity-80 transition-opacity ${
+            isCollapsed ? 'justify-center h-16 px-1' : 'justify-start h-14 px-4'
           }`}
         >
           {isCollapsed ? (
             <Image
               src="/logo/Logo-mark.png"
               alt="Termly"
-              width={48}
-              height={48}
+              width={52}
+              height={52}
               className="object-contain"
+              style={{ minWidth: '52px', minHeight: '52px' }}
             />
           ) : (
             <Image

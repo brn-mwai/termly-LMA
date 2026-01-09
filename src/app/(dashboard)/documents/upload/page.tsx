@@ -107,7 +107,7 @@ function UploadDocumentContent() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Upload Document</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Upload Document</h1>
           <p className="text-sm text-muted-foreground">
             Upload a loan document for AI-powered extraction
           </p>

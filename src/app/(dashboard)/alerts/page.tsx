@@ -139,7 +139,7 @@ export default async function AlertsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Alerts</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Alerts</h1>
           <p className="text-sm text-muted-foreground">
             Monitor covenant breaches, warnings, and important notifications
           </p>

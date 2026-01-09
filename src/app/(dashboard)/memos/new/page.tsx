@@ -119,7 +119,7 @@ export default function NewMemoPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">New Credit Memo</h1>
+          <h1 className="text-2xl font-medium tracking-tight">New Credit Memo</h1>
           <p className="text-sm text-muted-foreground">
             Create a memo manually or generate with AI
           </p>

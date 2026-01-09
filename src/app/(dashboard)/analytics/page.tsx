@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-medium tracking-tight">
             Analytics
           </h1>
           <p className="text-sm text-muted-foreground">
