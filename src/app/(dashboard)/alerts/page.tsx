@@ -135,12 +135,12 @@ export default async function AlertsPage() {
   const warningAlerts = alerts.filter((a) => a.severity === "warning");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Alerts</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight">Alerts</h1>
+          <p className="text-sm text-muted-foreground">
             Monitor covenant breaches, warnings, and important notifications
           </p>
         </div>

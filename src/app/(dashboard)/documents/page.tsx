@@ -61,12 +61,12 @@ export default async function DocumentsPage() {
 
 function DocumentsPageContent({ documents }: { documents: any[] }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight">Documents</h1>
+          <p className="text-sm text-muted-foreground">
             Upload and extract data from loan documents
           </p>
         </div>

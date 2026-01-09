@@ -121,12 +121,12 @@ export default async function LoansPage() {
   const loans = await getLoans();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Loans</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight">Loans</h1>
+          <p className="text-sm text-muted-foreground">
             Manage and monitor your loan portfolio
           </p>
         </div>

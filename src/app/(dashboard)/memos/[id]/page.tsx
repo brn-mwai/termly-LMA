@@ -69,7 +69,7 @@ export default function MemoDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -79,7 +79,7 @@ export default function MemoDetailPage() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl tracking-tight">{memo.title}</h1>
+            <h1 className="text-xl font-semibold tracking-tight">{memo.title}</h1>
             {memo.generated_by_ai && (
               <Badge variant="secondary" className="bg-purple-100 text-purple-800">
                 <Sparkle className="h-3 w-3 mr-1" />

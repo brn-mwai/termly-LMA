@@ -72,7 +72,7 @@ export default function NewLoanPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -81,14 +81,14 @@ export default function NewLoanPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Add New Loan</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight">Add New Loan</h1>
+          <p className="text-sm text-muted-foreground">
             Create a new loan facility in your portfolio
           </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
             {error}

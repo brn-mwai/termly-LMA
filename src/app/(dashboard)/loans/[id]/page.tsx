@@ -234,7 +234,7 @@ export default async function LoanDetailPage({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -243,7 +243,7 @@ export default async function LoanDetailPage({
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl tracking-tight">
+          <h1 className="text-xl font-semibold tracking-tight">
             {loan.borrowers?.name || "Unknown Borrower"}
           </h1>
           <p className="text-muted-foreground">{loan.name}</p>

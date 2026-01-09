@@ -107,7 +107,7 @@ export default function DocumentDetailPage() {
   const extraction = document.extracted_data;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -116,7 +116,7 @@ export default function DocumentDetailPage() {
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl tracking-tight">{document.name}</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{document.name}</h1>
           <p className="text-muted-foreground">
             {document.loans?.borrowers?.name} - {document.loans?.name}
           </p>

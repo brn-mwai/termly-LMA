@@ -110,7 +110,7 @@ export default function NewMemoPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -119,8 +119,8 @@ export default function NewMemoPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">New Credit Memo</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight">New Credit Memo</h1>
+          <p className="text-sm text-muted-foreground">
             Create a memo manually or generate with AI
           </p>
         </div>
