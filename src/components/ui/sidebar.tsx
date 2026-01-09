@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, VariantProps } from 'class-variance-authority'
-import { List } from '@phosphor-icons/react'
+import { SidebarSimple } from '@phosphor-icons/react'
 
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
@@ -264,7 +264,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <List className="size-4" />
+      <SidebarSimple className="size-4" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )

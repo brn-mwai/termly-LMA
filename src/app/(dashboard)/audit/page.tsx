@@ -67,8 +67,8 @@ export default async function AuditPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <History className="h-8 w-8" />
+        <h1 className="text-2xl tracking-tight flex items-center gap-2">
+          <History className="h-6 w-6" />
           Audit Trail
         </h1>
         <p className="text-muted-foreground">

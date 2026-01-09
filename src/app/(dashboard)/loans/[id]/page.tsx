@@ -243,7 +243,7 @@ export default async function LoanDetailPage({
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl tracking-tight">
+          <h1 className="text-2xl tracking-tight">
             {loan.borrowers?.name || "Unknown Borrower"}
           </h1>
           <p className="text-muted-foreground">{loan.name}</p>

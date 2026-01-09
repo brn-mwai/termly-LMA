@@ -117,7 +117,7 @@ export default function DocumentDetailPage() {
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">{document.name}</h1>
+          <h1 className="text-2xl tracking-tight">{document.name}</h1>
           <p className="text-muted-foreground">
             {document.loans?.borrowers?.name} - {document.loans?.name}
           </p>

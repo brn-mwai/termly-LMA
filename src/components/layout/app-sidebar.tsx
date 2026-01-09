@@ -6,11 +6,9 @@ import {
   Files,
   Bell,
   ChartBar,
-  Upload,
   Scroll,
   ClockCounterClockwise,
   Gear,
-  ChatCircleDots,
 } from "@phosphor-icons/react"
 
 import { NavMain } from '@/components/layout/nav-main'
@@ -22,7 +20,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-  SidebarSeparator,
 } from '@/components/ui/sidebar'
 
 const mainNavItems = [
@@ -51,23 +48,10 @@ const mainNavItems = [
     url: "/analytics",
     icon: ChartBar,
   },
-]
-
-const toolsNavItems = [
-  {
-    title: "Upload",
-    url: "/documents/upload",
-    icon: Upload,
-  },
   {
     title: "Memos",
     url: "/memos",
     icon: Scroll,
-  },
-  {
-    title: "AI Assistant",
-    url: "/chat",
-    icon: ChatCircleDots,
   },
 ]
 
@@ -90,11 +74,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <TeamSwitcher />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="overflow-hidden">
         <NavMain items={mainNavItems} label="Platform" />
-        <SidebarSeparator />
-        <NavMain items={toolsNavItems} label="Tools" />
-        <SidebarSeparator />
         <NavMain items={systemNavItems} label="System" />
       </SidebarContent>
       <SidebarFooter>

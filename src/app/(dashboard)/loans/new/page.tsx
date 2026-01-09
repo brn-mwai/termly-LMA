@@ -81,7 +81,7 @@ export default function NewLoanPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Add New Loan</h1>
+          <h1 className="text-2xl tracking-tight">Add New Loan</h1>
           <p className="text-muted-foreground">
             Create a new loan facility in your portfolio
           </p>
