@@ -27,10 +27,10 @@ export default function MemoDetailPage() {
         const { data } = await res.json();
         setMemo(data);
       } else {
-        setMemo(mockMemo);
+        setMemo(null);
       }
     } catch {
-      setMemo(mockMemo);
+      setMemo(null);
     } finally {
       setLoading(false);
     }
@@ -126,60 +126,3 @@ export default function MemoDetailPage() {
     </div>
   );
 }
-
-const mockMemo = {
-  id: '1',
-  title: 'Q4 2025 Quarterly Review - Acme Corporation',
-  content: `## Executive Summary
-
-Acme Corporation has experienced deteriorating financial performance in Q4 2025, resulting in a breach of the Total Leverage Ratio covenant. The leverage ratio increased to 5.2x, exceeding the maximum threshold of 5.0x. Immediate engagement with the borrower is recommended to discuss remediation options.
-
-## Borrower Overview
-
-**Company:** Acme Corporation
-**Industry:** Manufacturing
-**Facility:** Senior Term Loan
-**Commitment:** $250M
-**Outstanding:** $225M
-**Maturity:** June 15, 2028
-
-## Financial Performance
-
-Revenue declined 8% YoY to $312.5M, primarily driven by:
-- Reduced demand in key markets
-- Supply chain disruptions impacting production
-- Increased competition from overseas manufacturers
-
-EBITDA decreased to $43.3M from $52.5M in Q3 2025, representing a 17.5% decline.
-
-## Covenant Compliance Analysis
-
-| Covenant | Threshold | Actual | Headroom | Status |
-|----------|-----------|--------|----------|--------|
-| Total Leverage | ≤ 5.0x | 5.2x | -4.0% | **BREACH** |
-| Interest Coverage | ≥ 2.0x | 2.8x | +40.0% | Compliant |
-| Fixed Charge Coverage | ≥ 1.25x | 1.35x | +8.0% | Warning |
-
-## Risk Assessment
-
-**Key Risks:**
-- Continued revenue decline could further deteriorate leverage metrics
-- Fixed Charge Coverage trending toward warning threshold
-- Industry headwinds expected to persist through H1 2026
-
-**Mitigating Factors:**
-- Strong liquidity position
-- Cost reduction initiatives underway
-- Diversified customer base
-
-## Recommendations
-
-1. **Immediate:** Engage borrower to discuss Q4 results and remediation plan
-2. **Short-term:** Request 13-week cash flow forecast
-3. **Ongoing:** Increase monitoring frequency to monthly
-4. **Consider:** Placement on watchlist pending remediation progress`,
-  generated_by_ai: true,
-  created_at: '2026-01-06T10:30:00Z',
-  loans: { id: '1', name: 'Senior Term Loan', borrowers: { name: 'Acme Corporation', industry: 'Manufacturing' } },
-  users: { full_name: 'John Smith', email: 'john@example.com' },
-};

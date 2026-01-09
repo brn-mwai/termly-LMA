@@ -41,7 +41,7 @@ const entityIcons: Record<string, React.ElementType> = {
 export default async function AuditPage() {
   const { userId } = await auth();
 
-  let auditLogs = mockAuditLogs;
+  let auditLogs: any[] = [];
 
   if (userId) {
     const supabase = await createClient();
@@ -65,7 +65,7 @@ export default async function AuditPage() {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (data && data.length > 0) {
+      if (data) {
         auditLogs = data;
       }
     }
@@ -195,60 +195,3 @@ export default async function AuditPage() {
     </div>
   );
 }
-
-const mockAuditLogs = [
-  {
-    id: '1',
-    action: 'extract',
-    entity_type: 'document',
-    entity_id: '1',
-    changes: { covenants_found: 3, confidence: 0.95 },
-    created_at: '2026-01-06T10:30:00Z',
-    users: { full_name: 'AI Extraction', email: 'system@termly.cc' },
-  },
-  {
-    id: '2',
-    action: 'create',
-    entity_type: 'memo',
-    entity_id: '1',
-    changes: { generated_by_ai: true },
-    created_at: '2026-01-06T10:25:00Z',
-    users: { full_name: 'John Smith', email: 'john@example.com' },
-  },
-  {
-    id: '3',
-    action: 'upload',
-    entity_type: 'document',
-    entity_id: '2',
-    changes: { fileName: 'Q4_Compliance.pdf', fileSize: 850000 },
-    created_at: '2026-01-05T14:00:00Z',
-    users: { full_name: 'Jane Doe', email: 'jane@example.com' },
-  },
-  {
-    id: '4',
-    action: 'acknowledge',
-    entity_type: 'alert',
-    entity_id: '1',
-    changes: null,
-    created_at: '2026-01-05T11:00:00Z',
-    users: { full_name: 'John Smith', email: 'john@example.com' },
-  },
-  {
-    id: '5',
-    action: 'create',
-    entity_type: 'loan',
-    entity_id: '5',
-    changes: { borrower: 'Epsilon Tech', commitment: 300000000 },
-    created_at: '2026-01-04T09:30:00Z',
-    users: { full_name: 'Jane Doe', email: 'jane@example.com' },
-  },
-  {
-    id: '6',
-    action: 'update',
-    entity_type: 'covenant',
-    entity_id: '3',
-    changes: { threshold: { from: 5.5, to: 5.0 } },
-    created_at: '2026-01-03T16:45:00Z',
-    users: { full_name: 'John Smith', email: 'john@example.com' },
-  },
-];

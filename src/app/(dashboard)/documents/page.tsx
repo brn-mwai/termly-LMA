@@ -26,36 +26,37 @@ const statusConfig: Record<string, { icon: any; label: string; className: string
 export default async function DocumentsPage() {
   const { userId } = await auth();
 
-  // For demo, use mock data if no auth
-  if (!userId) {
-    return <DocumentsPageContent documents={mockDocuments} />;
+  let documents: any[] = [];
+
+  if (userId) {
+    const supabase = await createClient();
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('clerk_id', userId)
+      .single();
+
+    const orgId = (userData as { organization_id: string } | null)?.organization_id;
+
+    if (orgId) {
+      const { data } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          loans (id, name, borrowers (name))
+        `)
+        .eq('organization_id', orgId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        documents = data;
+      }
+    }
   }
 
-  const supabase = await createClient();
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('organization_id')
-    .eq('clerk_id', userId)
-    .single();
-
-  const orgId = (userData as { organization_id: string } | null)?.organization_id;
-
-  if (!orgId) {
-    return <DocumentsPageContent documents={mockDocuments} />;
-  }
-
-  const { data: documents } = await supabase
-    .from('documents')
-    .select(`
-      *,
-      loans (id, name, borrowers (name))
-    `)
-    .eq('organization_id', orgId)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-
-  return <DocumentsPageContent documents={documents || mockDocuments} />;
+  return <DocumentsPageContent documents={documents} />;
 }
 
 function DocumentsPageContent({ documents }: { documents: any[] }) {
@@ -160,36 +161,3 @@ function DocumentsPageContent({ documents }: { documents: any[] }) {
     </div>
   );
 }
-
-const mockDocuments = [
-  {
-    id: '1',
-    name: 'Acme Corp Credit Agreement.pdf',
-    loan_id: '1',
-    type: 'credit_agreement',
-    extraction_status: 'completed',
-    file_size: 2500000,
-    created_at: '2025-12-15T10:00:00Z',
-    loans: { id: '1', name: 'Senior Term Loan', borrowers: { name: 'Acme Corporation' } },
-  },
-  {
-    id: '2',
-    name: 'Q4 2025 Compliance Certificate.pdf',
-    loan_id: '1',
-    type: 'compliance_certificate',
-    extraction_status: 'completed',
-    file_size: 850000,
-    created_at: '2026-01-05T14:30:00Z',
-    loans: { id: '1', name: 'Senior Term Loan', borrowers: { name: 'Acme Corporation' } },
-  },
-  {
-    id: '3',
-    name: 'Beta Industries Term Loan Agreement.pdf',
-    loan_id: '2',
-    type: 'credit_agreement',
-    extraction_status: 'pending',
-    file_size: 3200000,
-    created_at: '2026-01-06T09:15:00Z',
-    loans: { id: '2', name: 'Term Loan B', borrowers: { name: 'Beta Industries' } },
-  },
-];

@@ -10,7 +10,7 @@ import { formatDate, formatRelativeTime } from '@/lib/utils/format';
 export default async function MemosPage() {
   const { userId } = await auth();
 
-  let memos = mockMemos;
+  let memos: any[] = [];
 
   if (userId) {
     const supabase = await createClient();
@@ -35,7 +35,7 @@ export default async function MemosPage() {
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
-      if (data && data.length > 0) {
+      if (data) {
         memos = data;
       }
     }
@@ -122,33 +122,3 @@ export default async function MemosPage() {
     </div>
   );
 }
-
-const mockMemos = [
-  {
-    id: '1',
-    title: 'Q4 2025 Quarterly Review - Acme Corporation',
-    content: '## Executive Summary\n\nAcme Corporation has experienced deteriorating financial performance in Q4 2025, resulting in a breach of the Total Leverage Ratio covenant. The leverage ratio increased to 5.2x, exceeding the maximum threshold of 5.0x.\n\n## Financial Performance\n\nRevenue declined 8% YoY to $312.5M, primarily driven by...',
-    generated_by_ai: true,
-    created_at: '2026-01-06T10:30:00Z',
-    loans: { id: '1', name: 'Senior Term Loan', borrowers: { name: 'Acme Corporation' } },
-    users: { full_name: 'John Smith', email: 'john@example.com' },
-  },
-  {
-    id: '2',
-    title: 'Covenant Breach Analysis - Acme Corporation',
-    content: '## Breach Overview\n\nOn January 5, 2026, Acme Corporation breached the Total Leverage Ratio covenant with a calculated ratio of 5.2x against a maximum threshold of 5.0x...',
-    generated_by_ai: true,
-    created_at: '2026-01-05T14:00:00Z',
-    loans: { id: '1', name: 'Senior Term Loan', borrowers: { name: 'Acme Corporation' } },
-    users: { full_name: 'Jane Doe', email: 'jane@example.com' },
-  },
-  {
-    id: '3',
-    title: 'Annual Review - Beta Industries',
-    content: '## Executive Summary\n\nBeta Industries has maintained strong covenant compliance throughout 2025 with all covenants showing healthy headroom...',
-    generated_by_ai: false,
-    created_at: '2025-12-20T09:00:00Z',
-    loans: { id: '2', name: 'Revolving Credit Facility', borrowers: { name: 'Beta Industries' } },
-    users: { full_name: 'John Smith', email: 'john@example.com' },
-  },
-];

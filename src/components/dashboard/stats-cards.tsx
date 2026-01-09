@@ -122,19 +122,6 @@ function StatCard({
   return content;
 }
 
-// Generate mock trend data if not provided
-function generateMockTrend(baseValue: number, length: number = 7): number[] {
-  const trend: number[] = [];
-  let current = baseValue * 0.8;
-  for (let i = 0; i < length; i++) {
-    current = current + (Math.random() - 0.4) * (baseValue * 0.1);
-    current = Math.max(0, current);
-    trend.push(current);
-  }
-  trend[length - 1] = baseValue; // End at current value
-  return trend;
-}
-
 export function StatsCards({ stats }: StatsCardsProps) {
   const totalLoans = stats?.totalLoans ?? 0;
   const uniqueBorrowers = stats?.uniqueBorrowers ?? 0;
@@ -151,11 +138,11 @@ export function StatsCards({ stats }: StatsCardsProps) {
     ? Math.round((compliantCount / totalTests) * 100)
     : 0;
 
-  // Use provided trends or generate mock data
-  const loansTrend = stats?.loansTrend || generateMockTrend(totalLoans);
-  const portfolioTrend = stats?.portfolioTrend || generateMockTrend(portfolioValue);
-  const complianceTrend = stats?.complianceTrend || generateMockTrend(compliantCount);
-  const alertsTrend = stats?.alertsTrend || generateMockTrend(totalAlerts);
+  // Use provided trends only - no mock data
+  const loansTrend = stats?.loansTrend;
+  const portfolioTrend = stats?.portfolioTrend;
+  const complianceTrend = stats?.complianceTrend;
+  const alertsTrend = stats?.alertsTrend;
 
   return (
     <motion.div

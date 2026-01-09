@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AreaChart } from "@/components/charts/area-chart";
 import { chartColors } from "@/components/charts/chart-config";
 import { chartAnimation } from "@/lib/animations";
-import { format, subDays, subMonths } from "date-fns";
+import { ChartLine, SpinnerGap } from "@phosphor-icons/react";
 
 type DateRange = "7d" | "30d" | "90d" | "1y";
 
@@ -18,46 +18,7 @@ interface PortfolioDataPoint {
 }
 
 interface PortfolioChartProps {
-  data?: PortfolioDataPoint[];
   currentValue?: number;
-}
-
-// Generate mock data if not provided
-function generateMockData(range: DateRange, baseValue: number): PortfolioDataPoint[] {
-  const now = new Date();
-  const points: PortfolioDataPoint[] = [];
-
-  let days: number;
-  switch (range) {
-    case "7d":
-      days = 7;
-      break;
-    case "30d":
-      days = 30;
-      break;
-    case "90d":
-      days = 90;
-      break;
-    case "1y":
-      days = 365;
-      break;
-  }
-
-  let value = baseValue * 0.85;
-  for (let i = days; i >= 0; i--) {
-    const date = subDays(now, i);
-    value = value + (Math.random() - 0.45) * (baseValue * 0.02);
-    value = Math.max(baseValue * 0.7, Math.min(baseValue * 1.1, value));
-    points.push({
-      date: format(date, "MMM d"),
-      value: Math.round(value),
-    });
-  }
-
-  // Ensure last point is the current value
-  points[points.length - 1].value = baseValue;
-
-  return points;
 }
 
 function formatCurrency(value: number): string {
@@ -71,10 +32,30 @@ function formatCurrency(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
-export function PortfolioChart({ data, currentValue = 500000000 }: PortfolioChartProps) {
+export function PortfolioChart({ currentValue = 0 }: PortfolioChartProps) {
   const [range, setRange] = useState<DateRange>("30d");
+  const [chartData, setChartData] = useState<PortfolioDataPoint[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const chartData = data || generateMockData(range, currentValue);
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/dashboard/portfolio-history?range=${range}`);
+        if (res.ok) {
+          const { data } = await res.json();
+          setChartData(data || []);
+        } else {
+          setChartData([]);
+        }
+      } catch {
+        setChartData([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [range]);
 
   const ranges: { value: DateRange; label: string }[] = [
     { value: "7d", label: "7D" },
@@ -103,15 +84,27 @@ export function PortfolioChart({ data, currentValue = 500000000 }: PortfolioChar
           </div>
         </CardHeader>
         <CardContent>
-          <AreaChart
-            data={chartData}
-            xKey="date"
-            yKey="value"
-            height={250}
-            color={chartColors.chart1}
-            formatYAxis={formatCurrency}
-            formatTooltip={formatCurrency}
-          />
+          {loading ? (
+            <div className="flex items-center justify-center h-[250px]">
+              <SpinnerGap className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
+              <ChartLine className="h-12 w-12 mb-2" />
+              <p className="text-sm">No portfolio history data</p>
+              <p className="text-xs mt-1">Current value: {formatCurrency(currentValue)}</p>
+            </div>
+          ) : (
+            <AreaChart
+              data={chartData}
+              xKey="date"
+              yKey="value"
+              height={250}
+              color={chartColors.chart1}
+              formatYAxis={formatCurrency}
+              formatTooltip={formatCurrency}
+            />
+          )}
         </CardContent>
       </Card>
     </motion.div>

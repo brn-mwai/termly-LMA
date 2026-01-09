@@ -46,11 +46,10 @@ export default function DocumentDetailPage() {
         const { data } = await res.json();
         setDocument(data);
       } else {
-        // Use mock data for demo
-        setDocument(mockDocument);
+        setDocument(null);
       }
     } catch {
-      setDocument(mockDocument);
+      setDocument(null);
     } finally {
       setLoading(false);
     }
@@ -346,32 +345,3 @@ export default function DocumentDetailPage() {
     </div>
   );
 }
-
-const mockDocument = {
-  id: '1',
-  name: 'Acme Corp Credit Agreement.pdf',
-  loan_id: '1',
-  type: 'credit_agreement',
-  extraction_status: 'completed',
-  file_size: 2500000,
-  created_at: '2025-12-15T10:00:00Z',
-  confidence_scores: { overall: 0.95 },
-  loans: { id: '1', name: 'Senior Term Loan', borrowers: { name: 'Acme Corporation' } },
-  extracted_data: {
-    documentType: 'credit_agreement',
-    borrowerName: 'Acme Corporation',
-    facilityName: 'Senior Term Loan',
-    ebitdaDefinition: 'Consolidated EBITDA means, for any period, Consolidated Net Income for such period plus (a) the following to the extent deducted in calculating such Consolidated Net Income: interest expense, provision for income taxes, depreciation and amortization expense...',
-    ebitdaAddbacks: [
-      { category: 'non-cash', description: 'Non-cash stock compensation expense', cap: '5% of EBITDA', confidence: 0.95 },
-      { category: 'restructuring', description: 'Restructuring charges', cap: '$10M per fiscal year', confidence: 0.92 },
-      { category: 'transaction', description: 'Non-recurring transaction costs', cap: null, confidence: 0.88 },
-    ],
-    covenants: [
-      { name: 'Total Leverage Ratio', type: 'leverage', operator: 'max', threshold: 5.0, testingFrequency: 'quarterly', sourceClause: 'The Borrower shall not permit the Total Leverage Ratio as of the last day of any fiscal quarter to exceed 5.00 to 1.00.', confidence: 0.98 },
-      { name: 'Interest Coverage Ratio', type: 'interest_coverage', operator: 'min', threshold: 2.0, testingFrequency: 'quarterly', sourceClause: 'The Borrower shall not permit the Interest Coverage Ratio as of the last day of any fiscal quarter to be less than 2.00 to 1.00.', confidence: 0.97 },
-      { name: 'Fixed Charge Coverage Ratio', type: 'fixed_charge_coverage', operator: 'min', threshold: 1.25, testingFrequency: 'quarterly', sourceClause: 'The Borrower shall not permit the Fixed Charge Coverage Ratio to be less than 1.25 to 1.00.', confidence: 0.94 },
-    ],
-    overallConfidence: 0.95,
-  },
-};
