@@ -16,7 +16,11 @@ export default function DashboardLayout({
       <AppSidebar />
       <SidebarInset>
         <DashboardHeader />
-        <main className="flex-1 overflow-auto bg-muted/30 p-6">{children}</main>
+        <main className="flex-1 overflow-auto bg-muted/30">
+          <div className="mx-auto w-full max-w-7xl p-6">
+            {children}
+          </div>
+        </main>
       </SidebarInset>
       <ChatAssistant />
     </SidebarProvider>
