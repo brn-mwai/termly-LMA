@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TableauEmbed } from '@/components/analytics/tableau-embed';
+import { TableauEmbed, TableauEmbedRef } from '@/components/analytics/tableau-embed';
 import { DashboardSelector } from '@/components/analytics/dashboard-selector';
 import { RefreshButton } from '@/components/analytics/refresh-button';
 import { DASHBOARDS, DashboardKey } from '@/lib/tableau/config';
@@ -22,15 +22,26 @@ export default function AnalyticsPage() {
   const [activeDashboard, setActiveDashboard] = useState<DashboardKey>('portfolioOverview');
   const [loanId, setLoanId] = useState<string>('');
   const [loans, setLoans] = useState<any[]>([]);
+  const [loansLoading, setLoansLoading] = useState(true);
+  const tableauRef = useRef<TableauEmbedRef>(null);
 
   const dashboard = DASHBOARDS[activeDashboard];
 
   useEffect(() => {
     // Fetch loans for the loan selector
+    setLoansLoading(true);
     fetch('/api/loans?limit=50')
       .then((res) => res.json())
       .then((data) => setLoans(data.data || []))
-      .catch(() => setLoans([]));
+      .catch(() => setLoans([]))
+      .finally(() => setLoansLoading(false));
+  }, []);
+
+  // Handle refresh button click
+  const handleRefresh = useCallback(async () => {
+    if (tableauRef.current) {
+      await tableauRef.current.refresh();
+    }
   }, []);
 
   return (
@@ -46,7 +57,7 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <RefreshButton />
+          <RefreshButton onRefresh={handleRefresh} />
         </div>
       </div>
 
@@ -111,6 +122,7 @@ export default function AnalyticsPage() {
       <Card className="overflow-hidden">
         <CardContent className="p-0">
           <TableauEmbed
+            ref={tableauRef}
             dashboard={activeDashboard}
             parameters={
               loanId && activeDashboard === 'loanDetail'

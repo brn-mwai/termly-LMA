@@ -5,7 +5,7 @@ import { ArrowsClockwise } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 
 interface RefreshButtonProps {
-  onRefresh?: () => void;
+  onRefresh?: () => Promise<void> | void;
 }
 
 export function RefreshButton({ onRefresh }: RefreshButtonProps) {
@@ -15,14 +15,15 @@ export function RefreshButton({ onRefresh }: RefreshButtonProps) {
     setRefreshing(true);
 
     try {
-      // In production, this would refresh the Tableau data source
-      // For now, just reload the page
       if (onRefresh) {
-        onRefresh();
+        // Call the provided refresh handler
+        await onRefresh();
       } else {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Fallback: just reload the page
         window.location.reload();
       }
+    } catch (err) {
+      console.error('Failed to refresh:', err);
     } finally {
       setRefreshing(false);
     }

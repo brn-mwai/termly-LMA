@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { SpinnerGap, WarningCircle, ArrowsClockwise, ArrowSquareOut } from '@phosphor-icons/react';
 import { DashboardKey } from '@/lib/tableau/config';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,95 @@ interface TableauEmbedProps {
   height?: number;
 }
 
-export function TableauEmbed({ dashboard, parameters, height = 700 }: TableauEmbedProps) {
+export interface TableauEmbedRef {
+  refresh: () => Promise<void>;
+}
+
+// Token refresh interval: 8 minutes (tokens last 10 minutes)
+const TOKEN_REFRESH_INTERVAL = 8 * 60 * 1000;
+
+export const TableauEmbed = forwardRef<TableauEmbedRef, TableauEmbedProps>(
+  function TableauEmbed({ dashboard, parameters, height = 700 }, ref) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tokenData, setTokenData] = useState<{ token: string; viewUrl: string } | null>(null);
+  const [tokenData, setTokenData] = useState<{ token: string; viewUrl: string; expiresAt: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const vizRef = useRef<HTMLElement | null>(null);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch a new token from the API
+  const fetchToken = useCallback(async () => {
+    const res = await fetch('/api/tableau/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dashboard, parameters }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      if (err.error?.code === 'NOT_CONFIGURED') {
+        throw new Error('Tableau is not configured. Please configure Tableau credentials in environment variables.');
+      }
+      throw new Error(err.error?.message || 'Failed to get embed token');
+    }
+
+    const { data } = await res.json();
+    return data;
+  }, [dashboard, parameters]);
+
+  // Refresh the token and update the viz
+  const refreshToken = useCallback(async () => {
+    try {
+      const data = await fetchToken();
+      setTokenData({ token: data.token, viewUrl: data.viewUrl, expiresAt: data.expiresAt });
+
+      // Update the existing viz element with new token
+      if (vizRef.current) {
+        vizRef.current.setAttribute('token', data.token);
+      }
+    } catch (err) {
+      console.error('Failed to refresh Tableau token:', err);
+    }
+  }, [fetchToken]);
+
+  // Expose refresh method to parent components
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchToken();
+      setTokenData({ token: data.token, viewUrl: data.viewUrl, expiresAt: data.expiresAt });
+
+      if (vizRef.current && containerRef.current) {
+        // Remove and recreate viz for full refresh
+        containerRef.current.innerHTML = '';
+
+        const viz = document.createElement('tableau-viz');
+        viz.setAttribute('src', data.viewUrl);
+        viz.setAttribute('token', data.token);
+        viz.setAttribute('toolbar', 'hidden');
+        viz.setAttribute('hide-tabs', 'true');
+        viz.style.width = '100%';
+        viz.style.height = `${height}px`;
+
+        viz.addEventListener('firstinteractive', () => {
+          setLoading(false);
+        });
+
+        viz.addEventListener('vizloaderror', (e: any) => {
+          setError(e.detail?.message || 'Failed to load visualization');
+          setLoading(false);
+        });
+
+        containerRef.current.appendChild(viz);
+        vizRef.current = viz;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to refresh dashboard');
+      setLoading(false);
+    }
+  }, [fetchToken, height]);
+
+  useImperativeHandle(ref, () => ({ refresh }), [refresh]);
 
   useEffect(() => {
     let mounted = true;
@@ -26,25 +110,11 @@ export function TableauEmbed({ dashboard, parameters, height = 700 }: TableauEmb
         setError(null);
 
         // Get embed token from API
-        const res = await fetch('/api/tableau/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dashboard, parameters }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          if (err.error?.code === 'NOT_CONFIGURED') {
-            throw new Error('Tableau is not configured. Please configure Tableau credentials in environment variables.');
-          }
-          throw new Error(err.error?.message || 'Failed to get embed token');
-        }
-
-        const { data } = await res.json();
+        const data = await fetchToken();
 
         if (!mounted) return;
 
-        setTokenData({ token: data.token, viewUrl: data.viewUrl });
+        setTokenData({ token: data.token, viewUrl: data.viewUrl, expiresAt: data.expiresAt });
 
         // Load Tableau Embedding API script if not already loaded
         if (!document.querySelector('script[src*="tableau.embedding"]')) {
@@ -86,6 +156,13 @@ export function TableauEmbed({ dashboard, parameters, height = 700 }: TableauEmb
         });
 
         containerRef.current.appendChild(viz);
+        vizRef.current = viz;
+
+        // Set up automatic token refresh every 8 minutes
+        refreshIntervalRef.current = setInterval(() => {
+          if (mounted) refreshToken();
+        }, TOKEN_REFRESH_INTERVAL);
+
       } catch (err) {
         if (mounted) {
           setError(err instanceof Error ? err.message : 'Failed to load dashboard');
@@ -98,8 +175,11 @@ export function TableauEmbed({ dashboard, parameters, height = 700 }: TableauEmb
 
     return () => {
       mounted = false;
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
     };
-  }, [dashboard, parameters, height]);
+  }, [dashboard, parameters, height, fetchToken, refreshToken]);
 
   if (error) {
     return (
@@ -141,4 +221,4 @@ export function TableauEmbed({ dashboard, parameters, height = 700 }: TableauEmb
       />
     </div>
   );
-}
+});
