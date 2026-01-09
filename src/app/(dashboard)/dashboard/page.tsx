@@ -210,25 +210,25 @@ export default async function DashboardPage() {
   const data = await getDashboardData();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
             Monitor your loan portfolio covenant compliance
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" asChild>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
             <Link href="/loans/new">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-1.5" />
               Add Loan
             </Link>
           </Button>
-          <Button asChild>
+          <Button size="sm" asChild>
             <Link href="/documents/upload">
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-1.5" />
               Upload Document
             </Link>
           </Button>
@@ -240,27 +240,27 @@ export default async function DashboardPage() {
         <StatsCards stats={data?.stats} />
       </Suspense>
 
-      {/* Charts Row */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Suspense fallback={<ChartSkeleton height={250} />}>
+      {/* Charts Row - Equal height */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Suspense fallback={<ChartSkeleton height={220} />}>
           <PortfolioChart currentValue={data?.stats?.portfolioValue} />
         </Suspense>
-        <Suspense fallback={<ChartSkeleton height={200} />}>
+        <Suspense fallback={<ChartSkeleton height={220} />}>
           <ComplianceChart />
         </Suspense>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Covenant Status Table - Takes 2 columns */}
-        <div className="lg:col-span-2">
+      {/* Main Content Grid - 2 columns */}
+      <div className="grid gap-4 lg:grid-cols-5">
+        {/* Covenant Status Table - Takes 3 columns */}
+        <div className="lg:col-span-3">
           <Suspense fallback={<CovenantTableSkeleton />}>
             <CovenantStatusTable data={data?.covenantTests} />
           </Suspense>
         </div>
 
-        {/* Sidebar widgets */}
-        <div className="space-y-6">
+        {/* Sidebar widgets - Takes 2 columns */}
+        <div className="lg:col-span-2 grid gap-4 content-start">
           <Suspense fallback={<AlertsWidgetSkeleton />}>
             <AlertsWidget alerts={data?.alerts} />
           </Suspense>

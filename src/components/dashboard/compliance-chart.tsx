@@ -96,18 +96,18 @@ export function ComplianceChart() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center h-[200px]">
+            <div className="flex items-center justify-center h-[220px]">
               <SpinnerGap className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : chartData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+            <div className="flex flex-col items-center justify-center h-[220px] text-muted-foreground">
               <ChartBar className="h-12 w-12 mb-2" />
               <p className="text-sm">No compliance history data</p>
               <p className="text-xs mt-1">Run covenant tests to see trends</p>
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-4 mb-3">
                 {bars.map((bar) => (
                   <div key={bar.key} className="flex items-center gap-2">
                     <div
@@ -122,7 +122,7 @@ export function ComplianceChart() {
                 data={chartData}
                 xKey="month"
                 bars={bars}
-                height={200}
+                height={185}
               />
             </>
           )}

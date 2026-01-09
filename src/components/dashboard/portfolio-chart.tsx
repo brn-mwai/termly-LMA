@@ -85,11 +85,11 @@ export function PortfolioChart({ currentValue = 0 }: PortfolioChartProps) {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center h-[250px]">
+            <div className="flex items-center justify-center h-[220px]">
               <SpinnerGap className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : chartData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
+            <div className="flex flex-col items-center justify-center h-[220px] text-muted-foreground">
               <ChartLine className="h-12 w-12 mb-2" />
               <p className="text-sm">No portfolio history data</p>
               <p className="text-xs mt-1">Current value: {formatCurrency(currentValue)}</p>
@@ -99,7 +99,7 @@ export function PortfolioChart({ currentValue = 0 }: PortfolioChartProps) {
               data={chartData}
               xKey="date"
               yKey="value"
-              height={250}
+              height={220}
               color={chartColors.chart1}
               formatYAxis={formatCurrency}
               formatTooltip={formatCurrency}
