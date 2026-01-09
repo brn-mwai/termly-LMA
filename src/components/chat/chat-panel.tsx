@@ -5,6 +5,7 @@ import { Chat, X, PaperPlaneTilt, CircleNotch, Sparkle } from '@phosphor-icons/r
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { useChat } from './chat-context';
+import { useSidebar } from '@/components/ui/sidebar';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -19,12 +20,14 @@ const SUGGESTIONS = [
 ];
 
 export function ChatPanel() {
-  const { isOpen, closeChat, toggleChat } = useChat();
+  const { isOpen, closeChat, openChat } = useChat();
+  const { setOpen: setSidebarOpen } = useSidebar();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [sidebarWasOpen, setSidebarWasOpen] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,6 +40,19 @@ export function ChatPanel() {
       inputRef.current?.focus();
     }
   }, [isOpen]);
+
+  function handleOpenChat() {
+    // Store current sidebar state and collapse it
+    setSidebarWasOpen(true);
+    setSidebarOpen(false);
+    openChat();
+  }
+
+  function handleCloseChat() {
+    closeChat();
+    // Restore sidebar
+    setSidebarOpen(sidebarWasOpen);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -87,24 +103,21 @@ export function ChatPanel() {
     setMessages([]);
   }
 
-  // Toggle button when panel is closed
+  // Floating button when panel is closed
   if (!isOpen) {
     return (
       <button
-        onClick={toggleChat}
-        className="flex items-center gap-2 px-3 py-2 border-l bg-muted/30 hover:bg-muted/50 transition-colors"
+        onClick={handleOpenChat}
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
         title="Open AI Assistant"
       >
-        <Sparkle className="h-5 w-5 text-primary" />
-        <span className="text-xs font-medium writing-mode-vertical rotate-180" style={{ writingMode: 'vertical-rl' }}>
-          AI Assistant
-        </span>
+        <Sparkle className="h-6 w-6" weight="fill" />
       </button>
     );
   }
 
   return (
-    <div className="w-[380px] border-l bg-background flex flex-col shrink-0">
+    <div className="w-[380px] border-l bg-background flex flex-col shrink-0 animate-in slide-in-from-right duration-200">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30 shrink-0">
         <div className="flex items-center gap-3">
@@ -134,7 +147,7 @@ export function ChatPanel() {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={closeChat}
+            onClick={handleCloseChat}
           >
             <X className="h-4 w-4" />
           </Button>
