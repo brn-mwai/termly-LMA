@@ -62,11 +62,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Dashboard Tabs */}
-      <Card>
-        <CardContent className="p-0">
-          <DashboardSelector active={activeDashboard} onChange={setActiveDashboard} />
-        </CardContent>
-      </Card>
+      <DashboardSelector active={activeDashboard} onChange={setActiveDashboard} />
 
       {/* Loan ID selector for Loan Detail dashboard */}
       {activeDashboard === 'loanDetail' && (

@@ -117,16 +117,32 @@ export const TableauEmbed = forwardRef<TableauEmbedRef, TableauEmbedProps>(
         setTokenData({ token: data.token, viewUrl: data.viewUrl, expiresAt: data.expiresAt });
 
         // Load Tableau Embedding API script if not already loaded
-        if (!document.querySelector('script[src*="tableau.embedding"]')) {
+        const existingScript = document.querySelector('script[src*="tableau.embedding"]');
+        if (!existingScript) {
           const script = document.createElement('script');
           script.src = 'https://embedding.tableauusercontent.com/tableau.embedding.3.latest.min.js';
           script.type = 'module';
+          script.crossOrigin = 'anonymous';
           document.head.appendChild(script);
 
-          await new Promise((resolve, reject) => {
-            script.onload = resolve;
-            script.onerror = () => reject(new Error('Failed to load Tableau script'));
+          await new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Tableau script load timed out'));
+            }, 15000); // 15 second timeout
+
+            script.onload = () => {
+              clearTimeout(timeout);
+              // Give the module time to initialize
+              setTimeout(resolve, 500);
+            };
+            script.onerror = () => {
+              clearTimeout(timeout);
+              reject(new Error('Failed to load Tableau script'));
+            };
           });
+        } else {
+          // Script exists, wait a moment for it to initialize if needed
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
 
         if (!mounted || !containerRef.current) return;

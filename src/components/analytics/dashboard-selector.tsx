@@ -19,7 +19,7 @@ interface DashboardSelectorProps {
 
 export function DashboardSelector({ active, onChange }: DashboardSelectorProps) {
   return (
-    <div className="flex gap-2 border-b border-border">
+    <div className="flex gap-1 p-1 bg-muted rounded-lg">
       {Object.entries(DASHBOARDS).map(([key, dashboard]) => {
         const Icon = icons[key as DashboardKey];
         const isActive = active === key;
@@ -29,13 +29,13 @@ export function DashboardSelector({ active, onChange }: DashboardSelectorProps) 
             key={key}
             onClick={() => onChange(key as DashboardKey)}
             className={cn(
-              'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+              'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all',
               isActive
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
             )}
           >
-            <Icon className="h-4 w-4" weight="regular" />
+            <Icon className="h-4 w-4" weight={isActive ? 'fill' : 'regular'} />
             {dashboard.name}
           </button>
         );
