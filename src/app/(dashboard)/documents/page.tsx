@@ -65,7 +65,7 @@ function DocumentsPageContent({ documents }: { documents: any[] }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl tracking-tight">Documents</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
           <p className="text-muted-foreground">
             Upload and extract data from loan documents
           </p>

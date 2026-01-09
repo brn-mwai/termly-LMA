@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Gear,
   Bell,
   Moon,
   Sun,
@@ -27,6 +26,7 @@ import {
   Globe,
   CircleNotch,
   CheckCircle,
+  Gear,
 } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
 
@@ -67,8 +67,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl tracking-tight flex items-center gap-2">
-          <Gear className="h-6 w-6" />
+        <h1 className="text-2xl font-semibold tracking-tight">
           Settings
         </h1>
         <p className="text-muted-foreground">

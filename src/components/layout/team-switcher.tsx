@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/sidebar'
 
 export function TeamSwitcher() {
-  const { isMobile } = useSidebar()
+  const { isMobile, state } = useSidebar()
+  const isCollapsed = state === "collapsed"
 
   return (
     <SidebarMenu>
@@ -32,19 +33,28 @@ export function TeamSwitcher() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Image
-                  src="/logo/termly-icon.svg"
-                  alt="Termly"
-                  width={20}
-                  height={20}
-                  className="invert"
-                />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">Termly</span>
-                <span className="truncate text-xs text-muted-foreground">Covenant Monitoring</span>
-              </div>
+              {isCollapsed ? (
+                <div className="flex items-center justify-center">
+                  <Image
+                    src="/logo/termly-icon.svg"
+                    alt="Termly"
+                    width={24}
+                    height={24}
+                    className="dark:invert"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Image
+                    src="/logo/termly-logo.svg"
+                    alt="Termly"
+                    width={100}
+                    height={28}
+                    className="dark:invert"
+                    priority
+                  />
+                </div>
+              )}
               <CaretUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>

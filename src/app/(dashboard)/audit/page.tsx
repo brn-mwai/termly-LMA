@@ -75,8 +75,7 @@ export default async function AuditPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl tracking-tight flex items-center gap-2">
-          <ClockCounterClockwise className="h-6 w-6" />
+        <h1 className="text-2xl font-semibold tracking-tight">
           Audit Trail
         </h1>
         <p className="text-muted-foreground">

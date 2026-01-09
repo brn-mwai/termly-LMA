@@ -46,8 +46,7 @@ export default async function MemosPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl tracking-tight flex items-center gap-2">
-            <Scroll className="h-6 w-6" />
+          <h1 className="text-2xl font-semibold tracking-tight">
             Credit Memos
           </h1>
           <p className="text-muted-foreground">

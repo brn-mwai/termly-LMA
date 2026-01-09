@@ -16,7 +16,7 @@ import { DashboardSelector } from '@/components/analytics/dashboard-selector';
 import { RefreshButton } from '@/components/analytics/refresh-button';
 import { DASHBOARDS, DashboardKey } from '@/lib/tableau/config';
 import { Badge } from '@/components/ui/badge';
-import { ChartBar, Info } from '@phosphor-icons/react';
+import { Info } from '@phosphor-icons/react';
 
 export default function AnalyticsPage() {
   const [activeDashboard, setActiveDashboard] = useState<DashboardKey>('portfolioOverview');
@@ -38,8 +38,7 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl tracking-tight flex items-center gap-2">
-            <ChartBar className="h-6 w-6" />
+          <h1 className="text-2xl font-semibold tracking-tight">
             Analytics
           </h1>
           <p className="text-muted-foreground">
