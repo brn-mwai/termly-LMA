@@ -255,7 +255,7 @@ export function ChatPanel() {
             <Sparkle className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-display font-medium text-base">Termly Assistant</h3>
+            <h3 className="font-medium text-base">Sage</h3>
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
               <span className="text-xs text-muted-foreground">Online</span>
@@ -291,7 +291,7 @@ export function ChatPanel() {
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mb-4">
               <Chat className="h-7 w-7 text-primary" />
             </div>
-            <h4 className="font-display font-medium text-base mb-1">How can I help you?</h4>
+            <h4 className="font-medium text-base mb-1">How can I help you?</h4>
             <p className="text-xs text-muted-foreground mb-4">
               Ask about loans, covenants, or analytics.
             </p>
