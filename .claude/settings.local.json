@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "WebSearch",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:clerk.com)",
+      "WebFetch(domain:help.tableau.com)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:console.anthropic.com)",
+      "Bash(taskkill:*)",
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Complete Termly platform with all integrations\n\n- Add custom Clerk authentication with Termly-branded sign-in/sign-up pages\n- Configure Supabase database with full schema for loan covenant monitoring\n- Integrate Anthropic Claude and Groq AI with automatic fallback\n- Set up Tableau analytics embedding with Connected Apps\n- Implement shadcn/ui dashboard with Phosphor icons\n- Add document upload and AI extraction pipeline\n- Create chat assistant with portfolio context\n- Add landing page with feature sections\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel:*)",
+      "Bash(git commit:*)",
+      "Bash(git rm:*)",
+      "Bash(printf:*)"
+    ]
+  }
+}
