@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
-import { chat } from '@/lib/ai/groq';
+import { chat } from '@/lib/ai/client';
 import { MEMO_GENERATION_PROMPT, MEMO_TEMPLATES, MemoTemplate } from '@/lib/ai/prompts/generate-memo';
 import { successResponse, errorResponse, handleApiError, parseSearchParams, asUserWithOrg } from '@/lib/utils/api';
 
