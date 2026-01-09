@@ -255,11 +255,7 @@ export function ChatPanel() {
             <Sparkle className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-medium text-base">Sage</h3>
-            <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              <span className="text-xs text-muted-foreground">Online</span>
-            </div>
+            <h3 className="font-medium text-base">Ivy</h3>
           </div>
         </div>
         <div className="flex items-center gap-1">
