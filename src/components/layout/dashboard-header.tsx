@@ -1,6 +1,6 @@
 "use client";
 
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { House, MagnifyingGlass } from "@phosphor-icons/react";
 import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -14,32 +14,58 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-// Route to title mapping
+// Route to title mapping for known routes
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/loans": "Loans",
+  "/loans/new": "New Loan",
   "/documents": "Documents",
+  "/documents/upload": "Upload",
   "/alerts": "Alerts",
   "/analytics": "Analytics",
   "/memos": "Memos",
+  "/memos/new": "New Memo",
   "/audit": "Audit Trail",
   "/settings": "Settings",
-  "/documents/upload": "Upload Documents",
-  "/chat": "AI Assistant",
 };
+
+// Check if a segment looks like a UUID or ID
+function isIdSegment(segment: string): boolean {
+  // UUID pattern or numeric ID
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment) ||
+         /^\d+$/.test(segment);
+}
 
 function getBreadcrumbs(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
   const breadcrumbs: { title: string; href: string; isLast: boolean }[] = [];
 
   let currentPath = "";
+
   segments.forEach((segment, index) => {
     currentPath += `/${segment}`;
-    const title = routeTitles[currentPath] || segment.charAt(0).toUpperCase() + segment.slice(1);
+    const isLast = index === segments.length - 1;
+
+    // Check for known route first
+    let title = routeTitles[currentPath];
+
+    if (!title) {
+      // Handle dynamic ID segments
+      if (isIdSegment(segment)) {
+        title = "Details";
+      } else {
+        // Capitalize and format the segment
+        title = segment
+          .split("-")
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      }
+    }
+
     breadcrumbs.push({
       title,
       href: currentPath,
-      isLast: index === segments.length - 1,
+      isLast,
     });
   });
 
@@ -51,21 +77,35 @@ export function DashboardHeader() {
   const breadcrumbs = getBreadcrumbs(pathname);
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-background px-4">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+        <Separator orientation="vertical" className="h-4" />
         <Breadcrumb>
           <BreadcrumbList>
-            {breadcrumbs.map((crumb, index) => (
-              <BreadcrumbItem key={crumb.href} className={index === 0 ? "hidden md:block" : ""}>
+            {/* Home link */}
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/dashboard" className="flex items-center gap-1">
+                <House className="h-4 w-4" />
+                <span className="hidden sm:inline">Home</span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+
+            {/* Only show breadcrumbs if not on dashboard */}
+            {pathname !== "/dashboard" && breadcrumbs.map((crumb, index) => (
+              <BreadcrumbItem key={crumb.href}>
+                <BreadcrumbSeparator />
                 {crumb.isLast ? (
-                  <BreadcrumbPage>{crumb.title}</BreadcrumbPage>
+                  <BreadcrumbPage className="max-w-[150px] truncate">
+                    {crumb.title}
+                  </BreadcrumbPage>
                 ) : (
-                  <>
-                    <BreadcrumbLink href={crumb.href}>{crumb.title}</BreadcrumbLink>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                  </>
+                  <BreadcrumbLink
+                    href={crumb.href}
+                    className="max-w-[120px] truncate"
+                  >
+                    {crumb.title}
+                  </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
             ))}
