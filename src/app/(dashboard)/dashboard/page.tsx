@@ -1,7 +1,15 @@
+import { Suspense } from "react";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { CovenantStatusTable } from "@/components/dashboard/covenant-status-table";
 import { AlertsWidget } from "@/components/dashboard/alerts-widget";
 import { UpcomingTests } from "@/components/dashboard/upcoming-tests";
+import { PortfolioChart } from "@/components/dashboard/portfolio-chart";
+import { ComplianceChart } from "@/components/dashboard/compliance-chart";
+import { StatsCardsSkeleton } from "@/components/dashboard/stats-cards-skeleton";
+import { CovenantTableSkeleton } from "@/components/dashboard/covenant-table-skeleton";
+import { AlertsWidgetSkeleton } from "@/components/dashboard/alerts-widget-skeleton";
+import { UpcomingTestsSkeleton } from "@/components/dashboard/upcoming-tests-skeleton";
+import { ChartSkeleton } from "@/components/dashboard/chart-skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
@@ -228,19 +236,37 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <StatsCards stats={data?.stats} />
+      <Suspense fallback={<StatsCardsSkeleton />}>
+        <StatsCards stats={data?.stats} />
+      </Suspense>
+
+      {/* Charts Row */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Suspense fallback={<ChartSkeleton height={250} />}>
+          <PortfolioChart currentValue={data?.stats?.portfolioValue} />
+        </Suspense>
+        <Suspense fallback={<ChartSkeleton height={200} />}>
+          <ComplianceChart />
+        </Suspense>
+      </div>
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Covenant Status Table - Takes 2 columns */}
         <div className="lg:col-span-2">
-          <CovenantStatusTable data={data?.covenantTests} />
+          <Suspense fallback={<CovenantTableSkeleton />}>
+            <CovenantStatusTable data={data?.covenantTests} />
+          </Suspense>
         </div>
 
         {/* Sidebar widgets */}
         <div className="space-y-6">
-          <AlertsWidget alerts={data?.alerts} />
-          <UpcomingTests tests={data?.upcomingTests} />
+          <Suspense fallback={<AlertsWidgetSkeleton />}>
+            <AlertsWidget alerts={data?.alerts} />
+          </Suspense>
+          <Suspense fallback={<UpcomingTestsSkeleton />}>
+            <UpcomingTests tests={data?.upcomingTests} />
+          </Suspense>
         </div>
       </div>
     </div>
