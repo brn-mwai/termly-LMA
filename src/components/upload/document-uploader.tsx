@@ -14,13 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Upload,
+  UploadSimple,
   FileText,
   X,
   CheckCircle,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+  CircleNotch,
+  WarningCircle,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 type DocumentType =
@@ -128,13 +128,13 @@ export function DocumentUploader() {
       case "pending":
         return <FileText className="h-5 w-5 text-muted-foreground" />;
       case "uploading":
-        return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />;
+        return <CircleNotch className="h-5 w-5 text-blue-500 animate-spin" />;
       case "processing":
-        return <Loader2 className="h-5 w-5 text-yellow-500 animate-spin" />;
+        return <CircleNotch className="h-5 w-5 text-yellow-500 animate-spin" />;
       case "complete":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case "error":
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
+        return <WarningCircle className="h-5 w-5 text-red-500" />;
     }
   };
 
@@ -214,7 +214,7 @@ export function DocumentUploader() {
             )}
           >
             <input {...getInputProps()} />
-            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <UploadSimple className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             {isDragActive ? (
               <p className="text-lg font-medium">Drop files here...</p>
             ) : (
@@ -246,7 +246,7 @@ export function DocumentUploader() {
                 !selectedLoan || files.every((f) => f.status !== "pending")
               }
             >
-              <Upload className="h-4 w-4 mr-2" />
+              <UploadSimple className="h-4 w-4 mr-2" />
               Upload All
             </Button>
           </CardHeader>

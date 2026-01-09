@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, TrendingDown, TrendingUp } from "lucide-react";
+import { Eye, TrendDown, TrendUp } from "@phosphor-icons/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -122,9 +122,9 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
                       )}
                     >
                       {item.headroom >= 0 ? (
-                        <TrendingUp className="h-3 w-3" />
+                        <TrendUp className="h-3 w-3" />
                       ) : (
-                        <TrendingDown className="h-3 w-3" />
+                        <TrendDown className="h-3 w-3" />
                       )}
                       {item.headroom.toFixed(1)}%
                     </div>

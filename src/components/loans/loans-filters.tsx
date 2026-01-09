@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 
 export function LoansFilters() {
   return (
@@ -17,7 +17,7 @@ export function LoansFilters() {
       <CardContent className="pt-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search loans or borrowers..." className="pl-9" />
           </div>
           <Select defaultValue="all">

@@ -5,16 +5,16 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
+  House,
   FileText,
-  Building2,
-  AlertTriangle,
-  BarChart3,
-  Settings,
-  Upload,
-  ScrollText,
-  History,
-} from "lucide-react";
+  Buildings,
+  Warning,
+  ChartBar,
+  Gear,
+  UploadSimple,
+  Scroll,
+  ClockCounterClockwise,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -23,12 +23,12 @@ const mainNavItems = [
   {
     title: "Dashboard",
     href: "/dashboard",
-    icon: LayoutDashboard,
+    icon: House,
   },
   {
     title: "Loans",
     href: "/loans",
-    icon: Building2,
+    icon: Buildings,
   },
   {
     title: "Documents",
@@ -38,12 +38,12 @@ const mainNavItems = [
   {
     title: "Alerts",
     href: "/alerts",
-    icon: AlertTriangle,
+    icon: Warning,
   },
   {
     title: "Analytics",
     href: "/analytics",
-    icon: BarChart3,
+    icon: ChartBar,
   },
 ];
 
@@ -51,22 +51,22 @@ const secondaryNavItems = [
   {
     title: "Upload",
     href: "/documents/upload",
-    icon: Upload,
+    icon: UploadSimple,
   },
   {
     title: "Memos",
     href: "/memos",
-    icon: ScrollText,
+    icon: Scroll,
   },
   {
     title: "Audit Trail",
     href: "/audit",
-    icon: History,
+    icon: ClockCounterClockwise,
   },
   {
     title: "Settings",
     href: "/settings",
-    icon: Settings,
+    icon: Gear,
   },
 ];
 

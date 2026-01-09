@@ -8,12 +8,12 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
-  Building2,
-  AlertTriangle,
-  CheckCircle2,
-  TrendingDown,
-  DollarSign,
-} from "lucide-react";
+  Buildings,
+  Warning,
+  CheckCircle,
+  TrendDown,
+  CurrencyDollar,
+} from "@phosphor-icons/react";
 
 interface StatsData {
   totalLoans: number;
@@ -73,7 +73,7 @@ function StatCard({
               trend.isPositive ? "text-green-600" : "text-red-600"
             )}
           >
-            <TrendingDown
+            <TrendDown
               className={cn(
                 "h-3 w-3 mr-1",
                 trend.isPositive && "rotate-180"
@@ -120,25 +120,25 @@ export function StatsCards({ stats }: StatsCardsProps) {
         title="Total Loans"
         value={totalLoans}
         description={`Across ${uniqueBorrowers} borrower${uniqueBorrowers !== 1 ? 's' : ''}`}
-        icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
+        icon={<Buildings className="h-4 w-4 text-muted-foreground" />}
       />
       <StatCard
         title="Portfolio Value"
         value={formatCurrency(portfolioValue)}
         description="Total commitment"
-        icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+        icon={<CurrencyDollar className="h-4 w-4 text-muted-foreground" />}
       />
       <StatCard
         title="Compliant"
         value={compliantCount}
         description={`${complianceRate}% compliance rate`}
-        icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
+        icon={<CheckCircle className="h-4 w-4 text-green-600" />}
       />
       <StatCard
         title="Alerts"
         value={totalAlerts}
         description={`${criticalAlerts} critical, ${warningAlerts} warning${warningAlerts !== 1 ? 's' : ''}`}
-        icon={<AlertTriangle className="h-4 w-4 text-red-600" />}
+        icon={<Warning className="h-4 w-4 text-red-600" />}
       />
     </div>
   );

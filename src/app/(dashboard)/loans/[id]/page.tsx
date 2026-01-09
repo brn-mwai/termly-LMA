@@ -16,13 +16,13 @@ import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft,
   FileText,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
+  TrendUp,
+  TrendDown,
+  Warning,
   Upload,
   Calculator,
-  History,
-} from "lucide-react";
+  ClockCounterClockwise,
+} from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
 
@@ -165,9 +165,9 @@ function getHeadroomIndicator(headroom: number) {
       }`}
     >
       {headroom >= 0 ? (
-        <TrendingUp className="h-4 w-4" />
+        <TrendUp className="h-4 w-4" />
       ) : (
-        <TrendingDown className="h-4 w-4" />
+        <TrendDown className="h-4 w-4" />
       )}
       {headroom.toFixed(1)}%
     </div>
@@ -337,11 +337,11 @@ export default async function LoanDetailPage({
       <Tabs defaultValue="covenants" className="space-y-4">
         <TabsList>
           <TabsTrigger value="covenants">
-            <AlertTriangle className="h-4 w-4 mr-2" />
+            <Warning className="h-4 w-4 mr-2" />
             Covenants
           </TabsTrigger>
           <TabsTrigger value="financials">
-            <TrendingUp className="h-4 w-4 mr-2" />
+            <TrendUp className="h-4 w-4 mr-2" />
             Financials
           </TabsTrigger>
           <TabsTrigger value="documents">
@@ -349,7 +349,7 @@ export default async function LoanDetailPage({
             Documents
           </TabsTrigger>
           <TabsTrigger value="history">
-            <History className="h-4 w-4 mr-2" />
+            <ClockCounterClockwise className="h-4 w-4 mr-2" />
             History
           </TabsTrigger>
         </TabsList>
@@ -363,7 +363,7 @@ export default async function LoanDetailPage({
             <CardContent>
               {covenantsWithLatestTest.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <Warning className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No covenants configured for this loan</p>
                   <p className="text-sm mt-1">Upload a credit agreement to extract covenants</p>
                 </div>
@@ -427,7 +427,7 @@ export default async function LoanDetailPage({
             <CardContent>
               {financials.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <TrendUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No financial data available</p>
                   <p className="text-sm mt-1">Upload compliance certificates to extract financials</p>
                 </div>
@@ -540,7 +540,7 @@ export default async function LoanDetailPage({
             <CardContent>
               {auditLogs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <ClockCounterClockwise className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No audit history available</p>
                 </div>
               ) : (

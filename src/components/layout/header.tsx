@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, User } from "lucide-react";
+import { Bell, MagnifyingGlass, User } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -61,7 +61,7 @@ export function Header({ title }: HeaderProps) {
       <div className="flex items-center gap-4">
         {/* Search */}
         <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search loans, borrowers..."

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, AlertCircle, Info, ChevronRight } from "lucide-react";
+import { Warning, WarningCircle, Info, CaretRight } from "@phosphor-icons/react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
@@ -24,9 +24,9 @@ interface AlertsWidgetProps {
 function getSeverityIcon(severity: Alert["severity"]) {
   switch (severity) {
     case "critical":
-      return <AlertTriangle className="h-4 w-4 text-red-600" />;
+      return <Warning className="h-4 w-4 text-red-600" />;
     case "warning":
-      return <AlertCircle className="h-4 w-4 text-yellow-600" />;
+      return <WarningCircle className="h-4 w-4 text-yellow-600" />;
     case "info":
       return <Info className="h-4 w-4 text-blue-600" />;
     default:
@@ -55,7 +55,7 @@ export function AlertsWidget({ alerts }: AlertsWidgetProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
+          <Warning className="h-5 w-5" />
           Recent Alerts
         </CardTitle>
         <Button variant="outline" size="sm" asChild>
@@ -89,7 +89,7 @@ export function AlertsWidget({ alerts }: AlertsWidgetProps) {
                       {alert.borrower}: {alert.message}
                     </p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground mt-2" />
+                  <CaretRight className="h-4 w-4 text-muted-foreground mt-2" />
                 </Link>
               ))}
             </div>

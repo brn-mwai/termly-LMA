@@ -12,13 +12,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  AlertTriangle,
-  AlertCircle,
+  Warning,
+  WarningCircle,
   Info,
   Eye,
   CheckCircle,
   Bell,
-} from "lucide-react";
+} from "@phosphor-icons/react/dist/ssr";
 import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
@@ -99,9 +99,9 @@ async function getAlerts(): Promise<Alert[]> {
 function getSeverityIcon(severity: Alert["severity"]) {
   switch (severity) {
     case "critical":
-      return <AlertTriangle className="h-5 w-5 text-red-600" />;
+      return <Warning className="h-5 w-5 text-red-600" />;
     case "warning":
-      return <AlertCircle className="h-5 w-5 text-yellow-600" />;
+      return <WarningCircle className="h-5 w-5 text-yellow-600" />;
     case "info":
       return <Info className="h-5 w-5 text-blue-600" />;
   }
@@ -169,7 +169,7 @@ export default async function AlertsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <Warning className="h-5 w-5 text-red-600" />
               <span className="text-2xl font-bold text-red-800">
                 {criticalAlerts.length}
               </span>
@@ -184,7 +184,7 @@ export default async function AlertsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600" />
+              <WarningCircle className="h-5 w-5 text-yellow-600" />
               <span className="text-2xl font-bold text-yellow-800">
                 {warningAlerts.length}
               </span>

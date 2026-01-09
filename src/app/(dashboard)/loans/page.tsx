@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, FileText, Building2 } from "lucide-react";
+import { Plus, Eye, FileText, Buildings } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
 import { LoansFilters } from "@/components/loans/loans-filters";
@@ -145,14 +145,14 @@ export default async function LoansPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
+            <Buildings className="h-5 w-5" />
             Portfolio ({loans.length} loan{loans.length !== 1 ? 's' : ''})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loans.length === 0 ? (
             <div className="text-center py-12">
-              <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <Buildings className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No loans yet</h3>
               <p className="text-muted-foreground mb-4">
                 Get started by adding your first loan to the portfolio.
