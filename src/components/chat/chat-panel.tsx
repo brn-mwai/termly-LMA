@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Chat, X, PaperPlaneTilt, CircleNotch, Sparkle } from '@phosphor-icons/react';
+import { Chat, X, PaperPlaneTilt, CircleNotch, Sparkle, Paperclip, Smiley, Gif, Microphone, ArrowUp } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { useChat } from './chat-context';
@@ -218,29 +218,70 @@ export function ChatPanel() {
       </div>
 
       {/* Input */}
-      <div className="border-t p-3 bg-muted/20 shrink-0">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your portfolio..."
-            rows={1}
-            className="flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[40px] max-h-[100px]"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={loading || !input.trim()}
-            className="h-10 w-10 rounded-xl shrink-0"
-          >
-            <PaperPlaneTilt className="h-4 w-4" />
-          </Button>
+      <div className="border-t p-3 shrink-0">
+        <form onSubmit={handleSubmit}>
+          <div className="rounded-2xl border border-input bg-background overflow-hidden">
+            {/* Text Input */}
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask a question..."
+              rows={1}
+              className="w-full resize-none bg-transparent px-4 pt-3 pb-2 text-sm focus:outline-none min-h-[44px] max-h-[100px]"
+            />
+            {/* Bottom Bar with Icons */}
+            <div className="flex items-center justify-between px-3 pb-2">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  title="Attach file"
+                >
+                  <Paperclip className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  title="Add emoji"
+                >
+                  <Smiley className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  title="Add GIF"
+                >
+                  <Gif className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  title="Voice input"
+                >
+                  <Microphone className="h-5 w-5" />
+                </button>
+              </div>
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full transition-all",
+                  input.trim()
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {loading ? (
+                  <CircleNotch className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowUp className="h-4 w-4" weight="bold" />
+                )}
+              </button>
+            </div>
+          </div>
         </form>
-        <p className="text-[10px] text-muted-foreground text-center mt-2">
-          Press Enter to send
-        </p>
       </div>
     </div>
   );
