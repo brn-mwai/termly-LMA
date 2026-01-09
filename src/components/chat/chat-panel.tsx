@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { useChat } from './chat-context';
 import { useSidebar } from '@/components/ui/sidebar';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -256,6 +257,7 @@ export function ChatPanel() {
           </div>
           <div>
             <h3 className="font-medium text-base">Monty</h3>
+            <p className="text-xs text-muted-foreground">Your covenant assistant</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -321,9 +323,15 @@ export function ChatPanel() {
                       : 'bg-muted rounded-bl-md'
                   )}
                 >
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {msg.content}
-                  </p>
+                  {msg.role === 'assistant' ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-background/50 [&_pre]:p-2 [&_pre]:rounded-lg [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-medium [&_h2]:font-medium [&_h3]:font-medium">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {msg.content}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
