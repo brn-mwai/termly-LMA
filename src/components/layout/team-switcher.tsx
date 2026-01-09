@@ -26,8 +26,8 @@ export function TeamSwitcher() {
             <Image
               src="/logo/Logo-mark.png"
               alt="Termly"
-              width={32}
-              height={32}
+              width={40}
+              height={40}
             />
           ) : (
             <Image
