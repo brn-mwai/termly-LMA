@@ -10,7 +10,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { History, User, FileText, Building2, AlertTriangle, ScrollText, Eye } from 'lucide-react';
+import {
+  ClockCounterClockwise,
+  User,
+  FileText,
+  Buildings,
+  Warning,
+  Scroll,
+  Eye,
+} from '@phosphor-icons/react/dist/ssr';
 import { formatDateTime } from '@/lib/utils/format';
 
 const actionColors: Record<string, string> = {
@@ -23,10 +31,10 @@ const actionColors: Record<string, string> = {
 };
 
 const entityIcons: Record<string, React.ElementType> = {
-  loan: Building2,
+  loan: Buildings,
   document: FileText,
-  alert: AlertTriangle,
-  memo: ScrollText,
+  alert: Warning,
+  memo: Scroll,
   covenant: Eye,
 };
 
@@ -68,7 +76,7 @@ export default async function AuditPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl tracking-tight flex items-center gap-2">
-          <History className="h-6 w-6" />
+          <ClockCounterClockwise className="h-6 w-6" />
           Audit Trail
         </h1>
         <p className="text-muted-foreground">

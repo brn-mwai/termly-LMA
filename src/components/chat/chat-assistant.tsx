@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Loader2, Minimize2, Maximize2 } from 'lucide-react';
+import { Chat, X, PaperPlaneTilt, CircleNotch, Minus, ArrowsOut } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 
@@ -84,7 +84,7 @@ export function ChatAssistant() {
           isOpen ? 'bg-gray-700 text-white' : 'bg-primary text-primary-foreground'
         )}
       >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
+        {isOpen ? <X className="h-6 w-6" /> : <Chat className="h-6 w-6" />}
       </button>
 
       {/* Chat Window */}
@@ -109,9 +109,9 @@ export function ChatAssistant() {
                 onClick={() => setIsMinimized(!isMinimized)}
               >
                 {isMinimized ? (
-                  <Maximize2 className="h-4 w-4" />
+                  <ArrowsOut className="h-4 w-4" />
                 ) : (
-                  <Minimize2 className="h-4 w-4" />
+                  <Minus className="h-4 w-4" />
                 )}
               </Button>
               <Button
@@ -131,7 +131,7 @@ export function ChatAssistant() {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 && (
                   <div className="text-center py-8">
-                    <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <Chat className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <p className="text-sm text-muted-foreground">
                       Ask me about your loans, covenants, or portfolio!
                     </p>
@@ -177,7 +177,7 @@ export function ChatAssistant() {
                 {loading && (
                   <div className="flex justify-start">
                     <div className="rounded-lg bg-muted px-4 py-2">
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <CircleNotch className="h-5 w-5 animate-spin text-muted-foreground" />
                     </div>
                   </div>
                 )}
@@ -197,7 +197,7 @@ export function ChatAssistant() {
                     className="flex-1 rounded-lg border border-input bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <Button type="submit" size="icon" disabled={loading || !input.trim()}>
-                    <Send className="h-4 w-4" />
+                    <PaperPlaneTilt className="h-4 w-4" />
                   </Button>
                 </div>
               </form>

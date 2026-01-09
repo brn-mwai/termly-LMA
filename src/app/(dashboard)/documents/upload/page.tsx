@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Upload, FileText, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, UploadSimple, FileText, X, CircleNotch } from '@phosphor-icons/react';
 import { DOCUMENT_TYPES } from '@/lib/constants';
 
 function UploadDocumentContent() {
@@ -159,7 +159,7 @@ function UploadDocumentContent() {
                 </div>
               ) : (
                 <>
-                  <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <UploadSimple className="mx-auto h-12 w-12 text-muted-foreground" />
                   <p className="mt-4 text-lg font-medium">
                     Drag and drop a PDF file
                   </p>
@@ -223,7 +223,7 @@ function UploadDocumentContent() {
             <Link href="/documents">Cancel</Link>
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {loading && <CircleNotch className="h-4 w-4 mr-2 animate-spin" />}
             Upload & Extract
           </Button>
         </div>
@@ -236,7 +236,7 @@ export default function UploadDocumentPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     }>
       <UploadDocumentContent />

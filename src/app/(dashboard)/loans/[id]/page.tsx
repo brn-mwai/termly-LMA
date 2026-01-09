@@ -20,9 +20,9 @@ import {
   TrendDown,
   Warning,
   Upload,
-  Calculator,
   ClockCounterClockwise,
 } from "@phosphor-icons/react/dist/ssr";
+import { RunCovenantTestButton } from "@/components/loans/run-covenant-test-button";
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
 
@@ -254,10 +254,7 @@ export default async function LoanDetailPage({
             Upload Document
           </Link>
         </Button>
-        <Button>
-          <Calculator className="h-4 w-4 mr-2" />
-          Run Covenant Test
-        </Button>
+        <RunCovenantTestButton loanId={id} />
       </div>
 
       {/* Overview Cards */}

@@ -10,22 +10,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ArrowLeft,
   FileText,
-  Wand2,
+  MagicWand,
   CheckCircle,
   Clock,
-  AlertCircle,
-  Loader2,
-  Download,
-  RefreshCw,
-} from 'lucide-react';
+  WarningCircle,
+  CircleNotch,
+  DownloadSimple,
+  ArrowsClockwise,
+} from '@phosphor-icons/react';
 import { formatDate } from '@/lib/utils/format';
 
 const statusConfig: Record<string, { icon: any; label: string; className: string }> = {
   pending: { icon: Clock, label: 'Pending', className: 'bg-gray-100 text-gray-800' },
-  processing: { icon: Loader2, label: 'Processing', className: 'bg-blue-100 text-blue-800' },
+  processing: { icon: CircleNotch, label: 'Processing', className: 'bg-blue-100 text-blue-800' },
   completed: { icon: CheckCircle, label: 'Extracted', className: 'bg-green-100 text-green-800' },
-  failed: { icon: AlertCircle, label: 'Failed', className: 'bg-red-100 text-red-800' },
-  needs_review: { icon: AlertCircle, label: 'Needs Review', className: 'bg-yellow-100 text-yellow-800' },
+  failed: { icon: WarningCircle, label: 'Failed', className: 'bg-red-100 text-red-800' },
+  needs_review: { icon: WarningCircle, label: 'Needs Review', className: 'bg-yellow-100 text-yellow-800' },
 };
 
 export default function DocumentDetailPage() {
@@ -87,7 +87,7 @@ export default function DocumentDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -125,16 +125,16 @@ export default function DocumentDetailPage() {
         {document.extraction_status === 'pending' && (
           <Button onClick={triggerExtraction} disabled={extracting}>
             {extracting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <CircleNotch className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Wand2 className="h-4 w-4 mr-2" />
+              <MagicWand className="h-4 w-4 mr-2" />
             )}
             {extracting ? 'Extracting...' : 'Extract with AI'}
           </Button>
         )}
         {document.extraction_status === 'completed' && (
           <Button variant="outline" onClick={triggerExtraction} disabled={extracting}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${extracting ? 'animate-spin' : ''}`} />
+            <ArrowsClockwise className={`h-4 w-4 mr-2 ${extracting ? 'animate-spin' : ''}`} />
             Re-extract
           </Button>
         )}

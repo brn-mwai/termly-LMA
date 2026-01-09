@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, CircleNotch, Sparkle } from '@phosphor-icons/react';
 
 const templates = [
   { value: 'quarterly_review', label: 'Quarterly Review' },
@@ -134,7 +134,7 @@ export default function NewMemoPage() {
       <Card className="border-primary/50 bg-primary/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkle className="h-5 w-5 text-primary" />
             Generate with AI
           </CardTitle>
         </CardHeader>
@@ -180,9 +180,9 @@ export default function NewMemoPage() {
                 className="w-full"
               >
                 {generating ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <CircleNotch className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <Sparkle className="h-4 w-4 mr-2" />
                 )}
                 {generating ? 'Generating...' : 'Generate Memo'}
               </Button>
@@ -241,7 +241,7 @@ export default function NewMemoPage() {
                 <Link href="/memos">Cancel</Link>
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {loading && <CircleNotch className="h-4 w-4 mr-2 animate-spin" />}
                 Save Memo
               </Button>
             </div>

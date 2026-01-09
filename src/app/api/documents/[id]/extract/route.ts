@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { extractFromDocument, ExtractionResultSchema } from "@/lib/ai/extraction";
+import { parsePDF } from "@/lib/pdf/parser";
 
 export async function POST(
   request: NextRequest,
@@ -13,26 +16,104 @@ export async function POST(
     }
 
     const { id: documentId } = await params;
-    const body = await request.json();
-    const { documentContent, documentType } = body;
+    const supabase = await createClient();
+    const adminClient = createAdminClient();
 
-    if (!documentContent) {
-      return NextResponse.json(
-        { error: "Document content is required" },
-        { status: 400 }
-      );
+    // Get user's organization
+    const { data: userDataRaw } = await supabase
+      .from("users")
+      .select("id, organization_id")
+      .eq("clerk_id", userId)
+      .single();
+
+    const userData = userDataRaw as { id: string; organization_id: string } | null;
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Get the document
+    const { data: documentRaw, error: docError } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("id", documentId)
+      .eq("organization_id", userData.organization_id)
+      .single();
+
+    const document = documentRaw as {
+      id: string;
+      file_path: string;
+      type: string;
+      loan_id?: string;
+    } | null;
+
+    if (docError || !document) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    // Update status to processing
+    await supabase
+      .from("documents")
+      .update({ extraction_status: "processing" } as never)
+      .eq("id", documentId);
+
+    let documentContent: string;
+
+    // Check if content was provided in request (for re-extraction without re-downloading)
+    const body = await request.json().catch(() => ({}));
+
+    if (body.documentContent) {
+      documentContent = body.documentContent;
+    } else {
+      // Download the file from storage
+      const { data: fileData, error: downloadError } = await adminClient.storage
+        .from("documents")
+        .download(document.file_path);
+
+      if (downloadError || !fileData) {
+        await supabase
+          .from("documents")
+          .update({ extraction_status: "failed" } as never)
+          .eq("id", documentId);
+        return NextResponse.json({ error: "Failed to download document" }, { status: 500 });
+      }
+
+      // Parse the PDF
+      try {
+        const buffer = Buffer.from(await fileData.arrayBuffer());
+        const pdfResult = await parsePDF(buffer);
+        documentContent = pdfResult.text;
+
+        // Update document with page count
+        await supabase
+          .from("documents")
+          .update({ page_count: pdfResult.numPages } as never)
+          .eq("id", documentId);
+      } catch (parseError) {
+        await supabase
+          .from("documents")
+          .update({ extraction_status: "failed" } as never)
+          .eq("id", documentId);
+        return NextResponse.json(
+          { error: "Failed to parse PDF", details: parseError instanceof Error ? parseError.message : "Unknown error" },
+          { status: 422 }
+        );
+      }
     }
 
     // Perform multi-pass extraction
     const extractionResult = await extractFromDocument(
       documentContent,
-      documentType || "credit_agreement"
+      document.type || "credit_agreement"
     );
 
     // Validate the result
     const validated = ExtractionResultSchema.safeParse(extractionResult);
 
     if (!validated.success) {
+      await supabase
+        .from("documents")
+        .update({ extraction_status: "needs_review" } as never)
+        .eq("id", documentId);
       return NextResponse.json(
         {
           error: "Extraction validation failed",
@@ -42,11 +123,92 @@ export async function POST(
       );
     }
 
-    // In a real implementation, you would:
-    // 1. Update the document record with extraction status
-    // 2. Store the extracted data
-    // 3. Create covenant and financial period records
-    // 4. Generate alerts if needed
+    // Store extracted data and update document
+    await supabase
+      .from("documents")
+      .update({
+        extraction_status: "completed",
+        extracted_data: validated.data,
+        confidence_scores: {
+          overall: validated.data.overallConfidence,
+          covenants: validated.data.covenants?.map((c) => c.confidence) || [],
+          ebitda: validated.data.ebitdaAddbacks?.map((a) => a.confidence) || [],
+        },
+      } as never)
+      .eq("id", documentId);
+
+    // Create covenant records if covenants were extracted and loan_id exists
+    if (validated.data.covenants && validated.data.covenants.length > 0 && document.loan_id) {
+      for (const covenant of validated.data.covenants) {
+        // Check if covenant already exists for this loan
+        const { data: existingCovenant } = await supabase
+          .from("covenants")
+          .select("id")
+          .eq("loan_id", document.loan_id)
+          .eq("name", covenant.name)
+          .single();
+
+        if (!existingCovenant) {
+          await supabase.from("covenants").insert({
+            organization_id: userData.organization_id,
+            loan_id: document.loan_id,
+            name: covenant.name,
+            type: covenant.type,
+            operator: covenant.operator,
+            threshold: covenant.threshold,
+            testing_frequency: covenant.testingFrequency,
+            grace_period_days: covenant.gracePeriodDays || null,
+            definition_clause: covenant.sourceClause,
+            extracted_from: documentId,
+          } as never);
+        }
+      }
+    }
+
+    // Create financial period records if financial data was extracted
+    if (validated.data.financialData && validated.data.financialData.length > 0 && document.loan_id) {
+      for (const period of validated.data.financialData) {
+        // Check if period already exists
+        const { data: existingPeriod } = await supabase
+          .from("financial_periods")
+          .select("id")
+          .eq("loan_id", document.loan_id)
+          .eq("period_end_date", period.periodEndDate)
+          .single();
+
+        if (!existingPeriod) {
+          await supabase.from("financial_periods").insert({
+            organization_id: userData.organization_id,
+            loan_id: document.loan_id,
+            period_end_date: period.periodEndDate,
+            period_type: period.periodType,
+            revenue: period.revenue || null,
+            ebitda_reported: period.ebitdaReported || null,
+            total_debt: period.totalDebt || null,
+            interest_expense: period.interestExpense || null,
+            fixed_charges: period.fixedCharges || null,
+            current_assets: period.currentAssets || null,
+            current_liabilities: period.currentLiabilities || null,
+            net_worth: period.netWorth || null,
+            source_document_id: documentId,
+          } as never);
+        }
+      }
+    }
+
+    // Log audit event
+    await supabase.from("audit_logs").insert({
+      organization_id: userData.organization_id,
+      user_id: userData.id,
+      action: "extract",
+      entity_type: "document",
+      entity_id: documentId,
+      changes: {
+        covenants_found: validated.data.covenants?.length || 0,
+        financial_periods_found: validated.data.financialData?.length || 0,
+        confidence: validated.data.overallConfidence,
+      },
+    } as never);
 
     return NextResponse.json({
       success: true,
@@ -56,8 +218,21 @@ export async function POST(
     });
   } catch (error) {
     console.error("Extraction error:", error);
+
+    // Try to update document status to failed
+    try {
+      const { id: documentId } = await params;
+      const supabase = await createClient();
+      await supabase
+        .from("documents")
+        .update({ extraction_status: "failed" } as never)
+        .eq("id", documentId);
+    } catch {
+      // Ignore errors updating status
+    }
+
     return NextResponse.json(
-      { error: "Failed to extract document" },
+      { error: "Failed to extract document", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
@@ -74,56 +249,44 @@ export async function GET(
     }
 
     const { id: documentId } = await params;
+    const supabase = await createClient();
 
-    // In a real implementation, fetch the extraction result from the database
-    // For now, return a mock response
+    // Get user's organization
+    const { data: userDataRaw } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("clerk_id", userId)
+      .single();
+
+    const userData = userDataRaw as { organization_id: string } | null;
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Get the document with extracted data
+    const { data: docData, error } = await supabase
+      .from("documents")
+      .select("id, extraction_status, extracted_data, confidence_scores")
+      .eq("id", documentId)
+      .eq("organization_id", userData.organization_id)
+      .single();
+
+    const doc = docData as {
+      id: string;
+      extraction_status: string;
+      extracted_data: unknown;
+      confidence_scores: unknown;
+    } | null;
+
+    if (error || !doc) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
     return NextResponse.json({
-      documentId,
-      status: "completed",
-      extraction: {
-        documentType: "credit_agreement",
-        borrowerName: "Acme Corporation",
-        facilityName: "Senior Term Loan",
-        ebitdaDefinition:
-          'Consolidated EBITDA means, for any period, Consolidated Net Income plus...',
-        ebitdaAddbacks: [
-          {
-            category: "non-cash",
-            description: "Non-cash stock compensation expense",
-            cap: "5% of EBITDA",
-            confidence: 0.95,
-          },
-          {
-            category: "restructuring",
-            description: "Restructuring charges",
-            cap: "$10M per fiscal year",
-            confidence: 0.92,
-          },
-        ],
-        covenants: [
-          {
-            name: "Total Leverage Ratio",
-            type: "leverage",
-            operator: "max",
-            threshold: 5.0,
-            testingFrequency: "quarterly",
-            sourceClause:
-              "The Borrower shall not permit the Total Leverage Ratio as of the last day of any fiscal quarter to exceed 5.00 to 1.00.",
-            confidence: 0.98,
-          },
-          {
-            name: "Interest Coverage Ratio",
-            type: "interest_coverage",
-            operator: "min",
-            threshold: 2.0,
-            testingFrequency: "quarterly",
-            sourceClause:
-              "The Borrower shall not permit the Interest Coverage Ratio as of the last day of any fiscal quarter to be less than 2.00 to 1.00.",
-            confidence: 0.97,
-          },
-        ],
-        overallConfidence: 0.95,
-      },
+      documentId: doc.id,
+      status: doc.extraction_status,
+      extraction: doc.extracted_data,
+      confidenceScores: doc.confidence_scores,
     });
   } catch (error) {
     console.error("Get extraction error:", error);

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollText, Plus, Eye, Sparkles, User } from 'lucide-react';
+import { Scroll, Plus, Eye, Sparkle, User } from '@phosphor-icons/react/dist/ssr';
 import { formatDate, formatRelativeTime } from '@/lib/utils/format';
 
 export default async function MemosPage() {
@@ -47,7 +47,7 @@ export default async function MemosPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl tracking-tight flex items-center gap-2">
-            <ScrollText className="h-6 w-6" />
+            <Scroll className="h-6 w-6" />
             Credit Memos
           </h1>
           <p className="text-muted-foreground">
@@ -76,7 +76,7 @@ export default async function MemosPage() {
                 </div>
                 {memo.generated_by_ai && (
                   <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                    <Sparkles className="h-3 w-3 mr-1" />
+                    <Sparkle className="h-3 w-3 mr-1" />
                     AI
                   </Badge>
                 )}
@@ -108,7 +108,7 @@ export default async function MemosPage() {
 
         {memos.length === 0 && (
           <div className="col-span-full text-center py-12">
-            <ScrollText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <Scroll className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium">No memos yet</h3>
             <p className="text-muted-foreground mb-4">
               Create your first credit memo to get started

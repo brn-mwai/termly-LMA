@@ -12,15 +12,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, Eye, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { UploadSimple, FileText, Eye, CheckCircle, Clock, WarningCircle, CircleNotch } from '@phosphor-icons/react/dist/ssr';
 import { formatDate } from '@/lib/utils/format';
 
 const statusConfig: Record<string, { icon: any; label: string; className: string }> = {
   pending: { icon: Clock, label: 'Pending', className: 'bg-gray-100 text-gray-800' },
-  processing: { icon: Loader2, label: 'Processing', className: 'bg-blue-100 text-blue-800' },
+  processing: { icon: CircleNotch, label: 'Processing', className: 'bg-blue-100 text-blue-800' },
   completed: { icon: CheckCircle, label: 'Extracted', className: 'bg-green-100 text-green-800' },
-  failed: { icon: AlertCircle, label: 'Failed', className: 'bg-red-100 text-red-800' },
-  needs_review: { icon: AlertCircle, label: 'Needs Review', className: 'bg-yellow-100 text-yellow-800' },
+  failed: { icon: WarningCircle, label: 'Failed', className: 'bg-red-100 text-red-800' },
+  needs_review: { icon: WarningCircle, label: 'Needs Review', className: 'bg-yellow-100 text-yellow-800' },
 };
 
 export default async function DocumentsPage() {
@@ -71,7 +71,7 @@ function DocumentsPageContent({ documents }: { documents: any[] }) {
         </div>
         <Button asChild>
           <Link href="/documents/upload">
-            <Upload className="h-4 w-4 mr-2" />
+            <UploadSimple className="h-4 w-4 mr-2" />
             Upload Document
           </Link>
         </Button>

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, CircleNotch } from '@phosphor-icons/react';
 import { INDUSTRIES } from '@/lib/constants';
 
 const facilityTypes = [
@@ -244,7 +244,7 @@ export default function NewLoanPage() {
             <Link href="/loans">Cancel</Link>
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {loading && <CircleNotch className="h-4 w-4 mr-2 animate-spin" />}
             Create Loan
           </Button>
         </div>

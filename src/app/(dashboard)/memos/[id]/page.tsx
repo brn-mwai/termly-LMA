@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Sparkles, Edit, Trash2, Loader2, FileDown, User, Calendar } from 'lucide-react';
+import { ArrowLeft, Sparkle, Trash, CircleNotch, User, CalendarBlank } from '@phosphor-icons/react';
+import { ExportMemoButton } from '@/components/memos/export-memo-button';
 import { formatDate } from '@/lib/utils/format';
 
 export default function MemoDetailPage() {
@@ -51,7 +52,7 @@ export default function MemoDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -81,7 +82,7 @@ export default function MemoDetailPage() {
             <h1 className="text-2xl tracking-tight">{memo.title}</h1>
             {memo.generated_by_ai && (
               <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                <Sparkles className="h-3 w-3 mr-1" />
+                <Sparkle className="h-3 w-3 mr-1" />
                 AI Generated
               </Badge>
             )}
@@ -91,12 +92,9 @@ export default function MemoDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <FileDown className="h-4 w-4 mr-2" />
-            Export PDF
-          </Button>
+          <ExportMemoButton memo={memo} />
           <Button variant="outline" onClick={handleDelete}>
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash className="h-4 w-4 mr-2" />
             Delete
           </Button>
         </div>
@@ -109,7 +107,7 @@ export default function MemoDetailPage() {
           {memo.users?.full_name || 'System'}
         </div>
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
+          <CalendarBlank className="h-4 w-4" />
           {formatDate(memo.created_at)}
         </div>
         {memo.loans && (
