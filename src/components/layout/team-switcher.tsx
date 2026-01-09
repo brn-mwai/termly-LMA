@@ -24,11 +24,10 @@ export function TeamSwitcher() {
         >
           {isCollapsed ? (
             <Image
-              src="/logo/termly-icon.svg"
+              src="/logo/Logo-mark.png"
               alt="Termly"
-              width={28}
-              height={28}
-              className="dark:invert"
+              width={32}
+              height={32}
             />
           ) : (
             <Image
