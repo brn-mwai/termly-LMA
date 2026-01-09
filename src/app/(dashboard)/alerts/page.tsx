@@ -18,9 +18,10 @@ import {
   Eye,
   CheckCircle,
   Bell,
-  Filter,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
 
 interface Alert {
   id: string;
@@ -35,83 +36,65 @@ interface Alert {
   createdAt: Date;
 }
 
-const mockAlerts: Alert[] = [
-  {
-    id: "1",
-    severity: "critical",
-    title: "Leverage Covenant Breach",
-    message:
-      "Total Leverage Ratio of 5.2x exceeded maximum threshold of 5.0x. Immediate action required.",
-    borrower: "Acme Corporation",
-    loanName: "Senior Term Loan",
-    loanId: "1",
-    covenantType: "Leverage",
-    acknowledged: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30),
-  },
-  {
-    id: "2",
-    severity: "warning",
-    title: "Interest Coverage Headroom Below 15%",
-    message:
-      "Interest Coverage Ratio at 2.3x with threshold of 2.0x. Headroom is 15% - approaching warning level.",
-    borrower: "Beta Industries",
-    loanName: "Revolver",
-    loanId: "2",
-    covenantType: "Interest Coverage",
-    acknowledged: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
-  },
-  {
-    id: "3",
-    severity: "warning",
-    title: "Leverage Headroom Below 5%",
-    message:
-      "Total Leverage Ratio at 4.9x with threshold of 5.0x. Only 2% headroom remaining.",
-    borrower: "Epsilon Tech",
-    loanName: "Growth Facility",
-    loanId: "5",
-    covenantType: "Leverage",
-    acknowledged: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4),
-  },
-  {
-    id: "4",
-    severity: "info",
-    title: "Document Uploaded",
-    message: "Q3 2025 compliance certificate uploaded and ready for review.",
-    borrower: "Gamma Holdings",
-    loanName: "Term Loan B",
-    loanId: "3",
-    acknowledged: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-  },
-  {
-    id: "5",
-    severity: "info",
-    title: "AI Extraction Complete",
-    message:
-      "Financial data extracted from Q3 2025 statements. Review recommended.",
-    borrower: "Delta Manufacturing",
-    loanName: "Senior Secured",
-    loanId: "4",
-    acknowledged: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26),
-  },
-  {
-    id: "6",
-    severity: "critical",
-    title: "Fixed Charge Coverage Breach",
-    message:
-      "FCCR of 1.15x below minimum threshold of 1.25x. Grace period expires in 5 days.",
-    borrower: "Zeta Corp",
-    loanName: "ABL Facility",
-    loanId: "6",
-    covenantType: "Fixed Charge",
-    acknowledged: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48),
-  },
-];
+async function getAlerts(): Promise<Alert[]> {
+  const { userId } = await auth();
+  if (!userId) return [];
+
+  const supabase = await createClient();
+
+  // Get user's organization
+  const userResult = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("clerk_id", userId)
+    .single();
+
+  const userData = userResult.data as { organization_id: string } | null;
+  if (!userData?.organization_id) return [];
+
+  const { data, error } = await supabase
+    .from("alerts")
+    .select(`
+      id,
+      severity,
+      title,
+      message,
+      acknowledged,
+      created_at,
+      loans (
+        id,
+        name,
+        borrowers (
+          name
+        )
+      ),
+      covenants (
+        name,
+        type
+      )
+    `)
+    .eq("organization_id", userData.organization_id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error("Error fetching alerts:", error);
+    return [];
+  }
+
+  return ((data || []) as any[]).map((alert: any) => ({
+    id: alert.id,
+    severity: alert.severity as "critical" | "warning" | "info",
+    title: alert.title,
+    message: alert.message,
+    borrower: alert.loans?.borrowers?.name || "Unknown",
+    loanName: alert.loans?.name || "Unknown",
+    loanId: alert.loans?.id || "",
+    covenantType: alert.covenants?.name || alert.covenants?.type,
+    acknowledged: alert.acknowledged,
+    createdAt: new Date(alert.created_at),
+  }));
+}
 
 function getSeverityIcon(severity: Alert["severity"]) {
   switch (severity) {
@@ -144,26 +127,23 @@ function getSeverityBadge(severity: Alert["severity"]) {
   );
 }
 
-export default function AlertsPage() {
-  const unacknowledgedAlerts = mockAlerts.filter((a) => !a.acknowledged);
-  const acknowledgedAlerts = mockAlerts.filter((a) => a.acknowledged);
-  const criticalAlerts = mockAlerts.filter((a) => a.severity === "critical");
-  const warningAlerts = mockAlerts.filter((a) => a.severity === "warning");
+export default async function AlertsPage() {
+  const alerts = await getAlerts();
+  const unacknowledgedAlerts = alerts.filter((a) => !a.acknowledged);
+  const acknowledgedAlerts = alerts.filter((a) => a.acknowledged);
+  const criticalAlerts = alerts.filter((a) => a.severity === "critical");
+  const warningAlerts = alerts.filter((a) => a.severity === "warning");
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Alerts</h1>
+          <h1 className="text-3xl tracking-tight">Alerts</h1>
           <p className="text-muted-foreground">
             Monitor covenant breaches, warnings, and important notifications
           </p>
         </div>
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -177,7 +157,7 @@ export default function AlertsPage() {
           <CardContent>
             <div className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="text-2xl font-bold">{mockAlerts.length}</span>
+              <span className="text-2xl font-bold">{alerts.length}</span>
             </div>
           </CardContent>
         </Card>
@@ -234,7 +214,7 @@ export default function AlertsPage() {
           <TabsTrigger value="unacknowledged">
             Unacknowledged ({unacknowledgedAlerts.length})
           </TabsTrigger>
-          <TabsTrigger value="all">All ({mockAlerts.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({alerts.length})</TabsTrigger>
           <TabsTrigger value="acknowledged">
             Acknowledged ({acknowledgedAlerts.length})
           </TabsTrigger>
@@ -245,7 +225,7 @@ export default function AlertsPage() {
         </TabsContent>
 
         <TabsContent value="all">
-          <AlertTable alerts={mockAlerts} />
+          <AlertTable alerts={alerts} />
         </TabsContent>
 
         <TabsContent value="acknowledged">

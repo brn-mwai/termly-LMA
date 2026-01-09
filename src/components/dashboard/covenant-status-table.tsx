@@ -18,78 +18,20 @@ import { cn } from "@/lib/utils";
 interface CovenantStatus {
   id: string;
   borrower: string;
+  loanId: string;
   loanName: string;
   covenantType: string;
   currentValue: number;
   threshold: number;
-  operator: "max" | "min";
+  operator: "max" | "min" | string;
   status: "compliant" | "warning" | "breach";
   headroom: number;
   testDate: string;
 }
 
-const mockData: CovenantStatus[] = [
-  {
-    id: "1",
-    borrower: "Acme Corporation",
-    loanName: "Senior Term Loan",
-    covenantType: "Leverage",
-    currentValue: 5.2,
-    threshold: 5.0,
-    operator: "max",
-    status: "breach",
-    headroom: -4.0,
-    testDate: "2025-12-31",
-  },
-  {
-    id: "2",
-    borrower: "Beta Industries",
-    loanName: "Revolver",
-    covenantType: "Interest Coverage",
-    currentValue: 2.3,
-    threshold: 2.0,
-    operator: "min",
-    status: "warning",
-    headroom: 15.0,
-    testDate: "2025-12-31",
-  },
-  {
-    id: "3",
-    borrower: "Gamma Holdings",
-    loanName: "Term Loan B",
-    covenantType: "Leverage",
-    currentValue: 3.8,
-    threshold: 4.5,
-    operator: "max",
-    status: "compliant",
-    headroom: 18.4,
-    testDate: "2025-12-31",
-  },
-  {
-    id: "4",
-    borrower: "Delta Manufacturing",
-    loanName: "Senior Secured",
-    covenantType: "Fixed Charge",
-    currentValue: 1.4,
-    threshold: 1.25,
-    operator: "min",
-    status: "compliant",
-    headroom: 12.0,
-    testDate: "2025-12-31",
-  },
-  {
-    id: "5",
-    borrower: "Epsilon Tech",
-    loanName: "Growth Facility",
-    covenantType: "Leverage",
-    currentValue: 4.9,
-    threshold: 5.0,
-    operator: "max",
-    status: "warning",
-    headroom: 2.0,
-    testDate: "2025-12-31",
-  },
-];
+interface CovenantStatusTableProps {
+  data?: CovenantStatus[];
+}
 
 function getStatusBadge(status: CovenantStatus["status"]) {
   const variants = {
@@ -105,20 +47,23 @@ function getStatusBadge(status: CovenantStatus["status"]) {
   };
 
   return (
-    <Badge variant="secondary" className={variants[status]}>
-      {labels[status]}
+    <Badge variant="secondary" className={variants[status] || variants.compliant}>
+      {labels[status] || "Unknown"}
     </Badge>
   );
 }
 
 function formatValue(value: number, type: string): string {
-  if (type === "Leverage" || type === "Interest Coverage" || type === "Fixed Charge") {
-    return `${value.toFixed(1)}x`;
+  const ratioTypes = ["leverage", "interest_coverage", "fixed_charge", "debt_service", "current_ratio"];
+  if (ratioTypes.some(t => type.toLowerCase().includes(t))) {
+    return `${value.toFixed(2)}x`;
   }
-  return value.toString();
+  return value.toFixed(2);
 }
 
-export function CovenantStatusTable() {
+export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
+  const items = data || [];
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -128,68 +73,75 @@ export function CovenantStatusTable() {
         </Button>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Borrower</TableHead>
-              <TableHead>Covenant</TableHead>
-              <TableHead className="text-right">Actual</TableHead>
-              <TableHead className="text-right">Threshold</TableHead>
-              <TableHead className="text-right">Headroom</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockData.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{item.borrower}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {item.loanName}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{item.covenantType}</TableCell>
-                <TableCell className="text-right font-mono">
-                  {formatValue(item.currentValue, item.covenantType)}
-                </TableCell>
-                <TableCell className="text-right font-mono text-muted-foreground">
-                  {item.operator === "max" ? "≤" : "≥"}{" "}
-                  {formatValue(item.threshold, item.covenantType)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div
-                    className={cn(
-                      "flex items-center justify-end gap-1",
-                      item.headroom >= 15
-                        ? "text-green-600"
-                        : item.headroom >= 0
-                        ? "text-yellow-600"
-                        : "text-red-600"
-                    )}
-                  >
-                    {item.headroom >= 0 ? (
-                      <TrendingUp className="h-3 w-3" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3" />
-                    )}
-                    {item.headroom.toFixed(1)}%
-                  </div>
-                </TableCell>
-                <TableCell>{getStatusBadge(item.status)}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" asChild>
-                    <Link href={`/loans/${item.id}`}>
-                      <Eye className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </TableCell>
+        {items.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No covenant tests yet</p>
+            <p className="text-sm mt-1">Upload documents to run covenant tests</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Borrower</TableHead>
+                <TableHead>Covenant</TableHead>
+                <TableHead className="text-right">Actual</TableHead>
+                <TableHead className="text-right">Threshold</TableHead>
+                <TableHead className="text-right">Headroom</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{item.borrower}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {item.loanName}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{item.covenantType}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatValue(item.currentValue, item.covenantType)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-muted-foreground">
+                    {item.operator === "max" || item.operator === "lte" ? "≤" : "≥"}{" "}
+                    {formatValue(item.threshold, item.covenantType)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div
+                      className={cn(
+                        "flex items-center justify-end gap-1",
+                        item.headroom >= 15
+                          ? "text-green-600"
+                          : item.headroom >= 0
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                      )}
+                    >
+                      {item.headroom >= 0 ? (
+                        <TrendingUp className="h-3 w-3" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3" />
+                      )}
+                      {item.headroom.toFixed(1)}%
+                    </div>
+                  </TableCell>
+                  <TableCell>{getStatusBadge(item.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" asChild>
+                      <Link href={`/loans/${item.loanId}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );

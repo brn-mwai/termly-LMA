@@ -15,6 +15,22 @@ import {
   DollarSign,
 } from "lucide-react";
 
+interface StatsData {
+  totalLoans: number;
+  uniqueBorrowers: number;
+  portfolioValue: number;
+  compliantCount: number;
+  warningCount: number;
+  breachCount: number;
+  totalAlerts: number;
+  criticalAlerts: number;
+  warningAlerts: number;
+}
+
+interface StatsCardsProps {
+  stats?: StatsData;
+}
+
 interface StatCardProps {
   title: string;
   value: string | number;
@@ -71,34 +87,58 @@ function StatCard({
   );
 }
 
-export function StatsCards() {
+function formatCurrency(value: number): string {
+  if (value >= 1_000_000_000) {
+    return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  } else if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(1)}M`;
+  } else if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(1)}K`;
+  }
+  return `$${value.toFixed(0)}`;
+}
+
+export function StatsCards({ stats }: StatsCardsProps) {
+  const totalLoans = stats?.totalLoans ?? 0;
+  const uniqueBorrowers = stats?.uniqueBorrowers ?? 0;
+  const portfolioValue = stats?.portfolioValue ?? 0;
+  const compliantCount = stats?.compliantCount ?? 0;
+  const warningCount = stats?.warningCount ?? 0;
+  const breachCount = stats?.breachCount ?? 0;
+  const totalAlerts = stats?.totalAlerts ?? 0;
+  const criticalAlerts = stats?.criticalAlerts ?? 0;
+  const warningAlerts = stats?.warningAlerts ?? 0;
+
+  const totalTests = compliantCount + warningCount + breachCount;
+  const complianceRate = totalTests > 0
+    ? Math.round((compliantCount / totalTests) * 100)
+    : 0;
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Total Loans"
-        value="47"
-        description="Across 23 borrowers"
+        value={totalLoans}
+        description={`Across ${uniqueBorrowers} borrower${uniqueBorrowers !== 1 ? 's' : ''}`}
         icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
       />
       <StatCard
         title="Portfolio Value"
-        value="$2.4B"
+        value={formatCurrency(portfolioValue)}
         description="Total commitment"
         icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
       />
       <StatCard
         title="Compliant"
-        value="41"
-        description="87% compliance rate"
+        value={compliantCount}
+        description={`${complianceRate}% compliance rate`}
         icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
-        trend={{ value: 2.5, isPositive: true }}
       />
       <StatCard
         title="Alerts"
-        value="6"
-        description="3 breaches, 3 warnings"
+        value={totalAlerts}
+        description={`${criticalAlerts} critical, ${warningAlerts} warning${warningAlerts !== 1 ? 's' : ''}`}
         icon={<AlertTriangle className="h-4 w-4 text-red-600" />}
-        trend={{ value: 1.2, isPositive: false }}
       />
     </div>
   );

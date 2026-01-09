@@ -9,55 +9,31 @@ import { format, differenceInDays } from "date-fns";
 
 interface UpcomingTest {
   id: string;
+  loanId: string;
   borrower: string;
   loanName: string;
   covenantType: string;
   testDate: Date;
-  lastStatus: "compliant" | "warning" | "breach";
+  lastStatus: "compliant" | "warning" | "breach" | "pending";
 }
 
-const mockUpcomingTests: UpcomingTest[] = [
-  {
-    id: "1",
-    borrower: "Acme Corporation",
-    loanName: "Senior Term Loan",
-    covenantType: "Leverage",
-    testDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5), // 5 days
-    lastStatus: "breach",
-  },
-  {
-    id: "2",
-    borrower: "Beta Industries",
-    loanName: "Revolver",
-    covenantType: "Interest Coverage",
-    testDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 12), // 12 days
-    lastStatus: "warning",
-  },
-  {
-    id: "3",
-    borrower: "Gamma Holdings",
-    loanName: "Term Loan B",
-    covenantType: "Fixed Charge",
-    testDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 18), // 18 days
-    lastStatus: "compliant",
-  },
-  {
-    id: "4",
-    borrower: "Delta Manufacturing",
-    loanName: "Senior Secured",
-    covenantType: "Leverage",
-    testDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 25), // 25 days
-    lastStatus: "compliant",
-  },
-];
+interface UpcomingTestsProps {
+  tests?: UpcomingTest[];
+}
 
 function getDaysUntilBadge(testDate: Date) {
   const days = differenceInDays(testDate, new Date());
 
-  if (days <= 7) {
+  if (days < 0) {
     return (
       <Badge variant="secondary" className="bg-red-100 text-red-800">
-        {days} days
+        Overdue
+      </Badge>
+    );
+  } else if (days <= 7) {
+    return (
+      <Badge variant="secondary" className="bg-red-100 text-red-800">
+        {days} day{days !== 1 ? 's' : ''}
       </Badge>
     );
   } else if (days <= 14) {
@@ -79,14 +55,17 @@ function getStatusDot(status: UpcomingTest["lastStatus"]) {
     compliant: "bg-green-500",
     warning: "bg-yellow-500",
     breach: "bg-red-500",
+    pending: "bg-gray-400",
   };
 
   return (
-    <div className={`h-2 w-2 rounded-full ${colors[status]}`} title={`Last: ${status}`} />
+    <div className={`h-2 w-2 rounded-full ${colors[status] || colors.pending}`} title={`Last: ${status}`} />
   );
 }
 
-export function UpcomingTests() {
+export function UpcomingTests({ tests }: UpcomingTestsProps) {
+  const items = tests || [];
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -99,33 +78,41 @@ export function UpcomingTests() {
         </Button>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {mockUpcomingTests.map((test) => (
-            <div
-              key={test.id}
-              className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                {getStatusDot(test.lastStatus)}
-                <div>
-                  <p className="font-medium text-sm">{test.borrower}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {test.covenantType} - {test.loanName}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {format(test.testDate, "MMM d, yyyy")}
+        {items.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <p className="text-sm">No upcoming tests scheduled</p>
+            <p className="text-xs mt-1">Add covenants to loans to track test dates</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {items.map((test) => (
+              <Link
+                key={test.id}
+                href={`/loans/${test.loanId}`}
+                className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {getStatusDot(test.lastStatus)}
+                  <div>
+                    <p className="font-medium text-sm">{test.borrower}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {test.covenantType} - {test.loanName}
+                    </p>
                   </div>
                 </div>
-                {getDaysUntilBadge(test.testDate)}
-              </div>
-            </div>
-          ))}
-        </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {format(test.testDate, "MMM d, yyyy")}
+                    </div>
+                  </div>
+                  {getDaysUntilBadge(test.testDate)}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

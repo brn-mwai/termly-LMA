@@ -236,6 +236,7 @@ export interface Database {
           ebitda_definition: string | null;
           ebitda_addbacks: Json | null;
           testing_frequency: string;
+          test_due_date: string | null;
           grace_period_days: number;
           source_document_id: string | null;
           source_clause: string | null;
@@ -255,6 +256,7 @@ export interface Database {
           ebitda_definition?: string | null;
           ebitda_addbacks?: Json | null;
           testing_frequency?: string;
+          test_due_date?: string | null;
           grace_period_days?: number;
           source_document_id?: string | null;
           source_clause?: string | null;
@@ -274,6 +276,7 @@ export interface Database {
           ebitda_definition?: string | null;
           ebitda_addbacks?: Json | null;
           testing_frequency?: string;
+          test_due_date?: string | null;
           grace_period_days?: number;
           source_document_id?: string | null;
           source_clause?: string | null;

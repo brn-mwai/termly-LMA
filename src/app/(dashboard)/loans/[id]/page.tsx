@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,106 +23,104 @@ import {
   Calculator,
   History,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
 
-interface CovenantTest {
-  id: string;
-  name: string;
-  type: string;
-  currentValue: number;
-  threshold: number;
-  operator: "max" | "min";
-  status: "compliant" | "warning" | "breach";
-  headroom: number;
-  lastTestDate: string;
+async function getLoanDetails(loanId: string) {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const supabase = await createClient();
+
+  // Get user's organization
+  const userResult = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("clerk_id", userId)
+    .single();
+
+  const userData = userResult.data as { organization_id: string } | null;
+  if (!userData?.organization_id) return null;
+
+  // Fetch loan with all related data
+  const [loanResult, covenantsResult, financialsResult, documentsResult, auditResult] = await Promise.all([
+    // Loan with borrower
+    supabase
+      .from("loans")
+      .select(`
+        *,
+        borrowers (
+          id,
+          name,
+          industry,
+          rating
+        )
+      `)
+      .eq("id", loanId)
+      .eq("organization_id", userData.organization_id)
+      .single(),
+
+    // Covenants with latest tests
+    supabase
+      .from("covenants")
+      .select(`
+        id,
+        name,
+        type,
+        operator,
+        threshold,
+        testing_frequency,
+        covenant_tests (
+          id,
+          calculated_value,
+          threshold_at_test,
+          status,
+          headroom_percentage,
+          tested_at
+        )
+      `)
+      .eq("loan_id", loanId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true }),
+
+    // Financial periods
+    supabase
+      .from("financial_periods")
+      .select("*")
+      .eq("loan_id", loanId)
+      .order("period_end_date", { ascending: false })
+      .limit(4),
+
+    // Documents
+    supabase
+      .from("documents")
+      .select("*")
+      .eq("loan_id", loanId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(10),
+
+    // Audit logs
+    supabase
+      .from("audit_logs")
+      .select("*")
+      .eq("entity_type", "loan")
+      .eq("entity_id", loanId)
+      .order("created_at", { ascending: false })
+      .limit(10),
+  ]);
+
+  const loan = (loanResult as any).data;
+  if ((loanResult as any).error || !loan) return null;
+
+  return {
+    loan,
+    covenants: ((covenantsResult as any).data || []) as any[],
+    financials: ((financialsResult as any).data || []) as any[],
+    documents: ((documentsResult as any).data || []) as any[],
+    auditLogs: ((auditResult as any).data || []) as any[],
+  };
 }
-
-interface FinancialPeriod {
-  id: string;
-  periodEnd: string;
-  ebitda: number;
-  totalDebt: number;
-  interestExpense: number;
-  revenue: number;
-}
-
-const mockLoan = {
-  id: "1",
-  borrower: "Acme Corporation",
-  name: "Senior Term Loan",
-  facilityType: "Term Loan",
-  commitmentAmount: 250000000,
-  outstandingAmount: 225000000,
-  currency: "USD",
-  originationDate: "2023-06-15",
-  maturityDate: "2028-06-15",
-  interestRate: 0.0875,
-  interestRateType: "SOFR + 350bps",
-  industry: "Manufacturing",
-  rating: "B+",
-};
-
-const mockCovenants: CovenantTest[] = [
-  {
-    id: "1",
-    name: "Total Leverage Ratio",
-    type: "leverage",
-    currentValue: 5.2,
-    threshold: 5.0,
-    operator: "max",
-    status: "breach",
-    headroom: -4.0,
-    lastTestDate: "2025-12-31",
-  },
-  {
-    id: "2",
-    name: "Interest Coverage Ratio",
-    type: "interest_coverage",
-    currentValue: 2.8,
-    threshold: 2.0,
-    operator: "min",
-    status: "compliant",
-    headroom: 40.0,
-    lastTestDate: "2025-12-31",
-  },
-  {
-    id: "3",
-    name: "Fixed Charge Coverage",
-    type: "fixed_charge",
-    currentValue: 1.35,
-    threshold: 1.25,
-    operator: "min",
-    status: "warning",
-    headroom: 8.0,
-    lastTestDate: "2025-12-31",
-  },
-];
-
-const mockFinancials: FinancialPeriod[] = [
-  {
-    id: "1",
-    periodEnd: "2025-12-31",
-    ebitda: 43269231,
-    totalDebt: 225000000,
-    interestExpense: 15468750,
-    revenue: 312500000,
-  },
-  {
-    id: "2",
-    periodEnd: "2025-09-30",
-    ebitda: 48750000,
-    totalDebt: 230000000,
-    interestExpense: 15750000,
-    revenue: 325000000,
-  },
-  {
-    id: "3",
-    periodEnd: "2025-06-30",
-    ebitda: 52500000,
-    totalDebt: 235000000,
-    interestExpense: 16000000,
-    revenue: 340000000,
-  },
-];
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -132,25 +131,26 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function formatValue(value: number, type: string): string {
+function formatValue(value: number): string {
   return `${value.toFixed(2)}x`;
 }
 
-function getStatusBadge(status: CovenantTest["status"]) {
-  const variants = {
+function getStatusBadge(status: string) {
+  const variants: Record<string, string> = {
     compliant: "bg-green-100 text-green-800",
     warning: "bg-yellow-100 text-yellow-800",
     breach: "bg-red-100 text-red-800",
+    pending: "bg-gray-100 text-gray-800",
   };
 
   return (
-    <Badge variant="secondary" className={variants[status]}>
+    <Badge variant="secondary" className={variants[status] || variants.pending}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </Badge>
   );
 }
 
-function getHeadroomIndicator(headroom: number, operator: "max" | "min") {
+function getHeadroomIndicator(headroom: number) {
   const isHealthy = headroom >= 15;
   const isWarning = headroom >= 0 && headroom < 15;
 
@@ -174,12 +174,64 @@ function getHeadroomIndicator(headroom: number, operator: "max" | "min") {
   );
 }
 
+function getDocumentIcon(type: string) {
+  const colors: Record<string, string> = {
+    credit_agreement: "text-red-500",
+    compliance_certificate: "text-blue-500",
+    financial_statement: "text-purple-500",
+    amendment: "text-orange-500",
+    other: "text-gray-500",
+  };
+  return <FileText className={`h-8 w-8 ${colors[type] || colors.other}`} />;
+}
+
+function getExtractionBadge(status: string) {
+  const variants: Record<string, string> = {
+    completed: "bg-green-100 text-green-800",
+    processing: "bg-blue-100 text-blue-800",
+    pending: "bg-yellow-100 text-yellow-800",
+    failed: "bg-red-100 text-red-800",
+    needs_review: "bg-orange-100 text-orange-800",
+  };
+  const labels: Record<string, string> = {
+    completed: "Extracted",
+    processing: "Processing",
+    pending: "Pending",
+    failed: "Failed",
+    needs_review: "Review",
+  };
+  return (
+    <Badge className={variants[status] || variants.pending}>
+      {labels[status] || status}
+    </Badge>
+  );
+}
+
 export default async function LoanDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const data = await getLoanDetails(id);
+
+  if (!data) {
+    notFound();
+  }
+
+  const { loan, covenants, financials, documents, auditLogs } = data;
+
+  // Get latest test for each covenant
+  const covenantsWithLatestTest = covenants.map((covenant: any) => {
+    const tests = covenant.covenant_tests || [];
+    const latestTest = tests.sort((a: any, b: any) =>
+      new Date(b.tested_at).getTime() - new Date(a.tested_at).getTime()
+    )[0];
+    return {
+      ...covenant,
+      latestTest,
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -191,13 +243,13 @@ export default async function LoanDetailPage({
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {mockLoan.borrower}
+          <h1 className="text-3xl tracking-tight">
+            {loan.borrowers?.name || "Unknown Borrower"}
           </h1>
-          <p className="text-muted-foreground">{mockLoan.name}</p>
+          <p className="text-muted-foreground">{loan.name}</p>
         </div>
         <Button variant="outline" asChild>
-          <Link href={`/upload?loan=${id}`}>
+          <Link href={`/documents/upload?loan=${id}`}>
             <Upload className="h-4 w-4 mr-2" />
             Upload Document
           </Link>
@@ -218,10 +270,10 @@ export default async function LoanDetailPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(mockLoan.commitmentAmount)}
+              {formatCurrency(loan.commitment_amount)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mockLoan.facilityType}
+              {loan.facility_type}
             </p>
           </CardContent>
         </Card>
@@ -233,12 +285,10 @@ export default async function LoanDetailPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(mockLoan.outstandingAmount)}
+              {formatCurrency(loan.outstanding_amount)}
             </div>
             <Progress
-              value={
-                (mockLoan.outstandingAmount / mockLoan.commitmentAmount) * 100
-              }
+              value={(loan.outstanding_amount / loan.commitment_amount) * 100}
               className="h-2 mt-2"
             />
           </CardContent>
@@ -251,10 +301,10 @@ export default async function LoanDetailPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(mockLoan.interestRate * 100).toFixed(2)}%
+              {loan.interest_rate ? `${(loan.interest_rate * 100).toFixed(2)}%` : "N/A"}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mockLoan.interestRateType}
+              {loan.interest_rate_type || "Fixed"}
             </p>
           </CardContent>
         </Card>
@@ -266,17 +316,17 @@ export default async function LoanDetailPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Date(mockLoan.maturityDate).toLocaleDateString("en-US", {
+              {new Date(loan.maturity_date).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
               })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.ceil(
-                (new Date(mockLoan.maturityDate).getTime() - Date.now()) /
+              {Math.max(0, Math.ceil(
+                (new Date(loan.maturity_date).getTime() - Date.now()) /
                   (1000 * 60 * 60 * 24 * 30)
-              )}{" "}
+              ))}{" "}
               months remaining
             </p>
           </CardContent>
@@ -311,68 +361,59 @@ export default async function LoanDetailPage({
               <CardTitle>Covenant Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Covenant</TableHead>
-                    <TableHead className="text-right">Current Value</TableHead>
-                    <TableHead className="text-right">Threshold</TableHead>
-                    <TableHead className="text-right">Headroom</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Test</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockCovenants.map((covenant) => (
-                    <TableRow key={covenant.id}>
-                      <TableCell className="font-medium">
-                        {covenant.name}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatValue(covenant.currentValue, covenant.type)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-muted-foreground">
-                        {covenant.operator === "max" ? "≤" : "≥"}{" "}
-                        {formatValue(covenant.threshold, covenant.type)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {getHeadroomIndicator(covenant.headroom, covenant.operator)}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(covenant.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(covenant.lastTestDate).toLocaleDateString()}
-                      </TableCell>
+              {covenantsWithLatestTest.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p>No covenants configured for this loan</p>
+                  <p className="text-sm mt-1">Upload a credit agreement to extract covenants</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Covenant</TableHead>
+                      <TableHead className="text-right">Current Value</TableHead>
+                      <TableHead className="text-right">Threshold</TableHead>
+                      <TableHead className="text-right">Headroom</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Last Test</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {/* EBITDA Definition */}
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>EBITDA Definition</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none">
-                <p className="text-muted-foreground">
-                  <strong>Consolidated EBITDA</strong> means, for any period,
-                  Consolidated Net Income for such period plus (a) the following
-                  to the extent deducted in calculating such Consolidated Net
-                  Income:
-                </p>
-                <ul className="text-muted-foreground text-sm space-y-1 mt-2">
-                  <li>Interest Expense</li>
-                  <li>Provision for income taxes</li>
-                  <li>Depreciation and amortization expense</li>
-                  <li>
-                    Non-cash stock compensation expense (up to 5% of EBITDA)
-                  </li>
-                  <li>Restructuring charges (up to $10M per fiscal year)</li>
-                  <li>Non-recurring transaction costs</li>
-                </ul>
-              </div>
+                  </TableHeader>
+                  <TableBody>
+                    {covenantsWithLatestTest.map((covenant: any) => (
+                      <TableRow key={covenant.id}>
+                        <TableCell className="font-medium">
+                          {covenant.name}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {covenant.latestTest
+                            ? formatValue(covenant.latestTest.calculated_value)
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-muted-foreground">
+                          {covenant.operator === "max" ? "≤" : "≥"}{" "}
+                          {formatValue(covenant.threshold)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {covenant.latestTest
+                            ? getHeadroomIndicator(covenant.latestTest.headroom_percentage || 0)
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {covenant.latestTest
+                            ? getStatusBadge(covenant.latestTest.status)
+                            : getStatusBadge("pending")}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {covenant.latestTest
+                            ? new Date(covenant.latestTest.tested_at).toLocaleDateString()
+                            : "Never tested"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -384,45 +425,59 @@ export default async function LoanDetailPage({
               <CardTitle>Financial History</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Period End</TableHead>
-                    <TableHead className="text-right">Revenue</TableHead>
-                    <TableHead className="text-right">EBITDA</TableHead>
-                    <TableHead className="text-right">Total Debt</TableHead>
-                    <TableHead className="text-right">Interest Expense</TableHead>
-                    <TableHead className="text-right">Leverage</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockFinancials.map((period) => (
-                    <TableRow key={period.id}>
-                      <TableCell className="font-medium">
-                        {new Date(period.periodEnd).toLocaleDateString("en-US", {
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(period.revenue)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(period.ebitda)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(period.totalDebt)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(period.interestExpense)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {(period.totalDebt / period.ebitda).toFixed(2)}x
-                      </TableCell>
+              {financials.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p>No financial data available</p>
+                  <p className="text-sm mt-1">Upload compliance certificates to extract financials</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Period End</TableHead>
+                      <TableHead className="text-right">Revenue</TableHead>
+                      <TableHead className="text-right">EBITDA</TableHead>
+                      <TableHead className="text-right">Total Debt</TableHead>
+                      <TableHead className="text-right">Interest Expense</TableHead>
+                      <TableHead className="text-right">Leverage</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {financials.map((period: any) => (
+                      <TableRow key={period.id}>
+                        <TableCell className="font-medium">
+                          {new Date(period.period_end_date).toLocaleDateString("en-US", {
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {period.revenue ? formatCurrency(period.revenue) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {period.ebitda_adjusted
+                            ? formatCurrency(period.ebitda_adjusted)
+                            : period.ebitda_reported
+                            ? formatCurrency(period.ebitda_reported)
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {period.total_debt ? formatCurrency(period.total_debt) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {period.interest_expense ? formatCurrency(period.interest_expense) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {period.total_debt && period.ebitda_adjusted
+                            ? `${(period.total_debt / period.ebitda_adjusted).toFixed(2)}x`
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -433,51 +488,45 @@ export default async function LoanDetailPage({
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Documents</CardTitle>
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/upload?loan=${id}`}>
+                <Link href={`/documents/upload?loan=${id}`}>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload
                 </Link>
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg border">
-                  <div className="flex items-center gap-4">
-                    <FileText className="h-8 w-8 text-red-500" />
-                    <div>
-                      <p className="font-medium">Credit Agreement</p>
-                      <p className="text-sm text-muted-foreground">
-                        Uploaded Jun 15, 2023 - 245 pages
-                      </p>
-                    </div>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800">Extracted</Badge>
+              {documents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p>No documents uploaded</p>
+                  <p className="text-sm mt-1">Upload credit agreements and compliance certificates</p>
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-lg border">
-                  <div className="flex items-center gap-4">
-                    <FileText className="h-8 w-8 text-blue-500" />
-                    <div>
-                      <p className="font-medium">Q4 2025 Compliance Certificate</p>
-                      <p className="text-sm text-muted-foreground">
-                        Uploaded Jan 5, 2026 - 12 pages
-                      </p>
+              ) : (
+                <div className="space-y-4">
+                  {documents.map((doc: any) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between p-4 rounded-lg border"
+                    >
+                      <div className="flex items-center gap-4">
+                        {getDocumentIcon(doc.type)}
+                        <div>
+                          <p className="font-medium">{doc.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Uploaded{" "}
+                            {new Date(doc.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      {getExtractionBadge(doc.extraction_status)}
                     </div>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800">Extracted</Badge>
+                  ))}
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-lg border">
-                  <div className="flex items-center gap-4">
-                    <FileText className="h-8 w-8 text-purple-500" />
-                    <div>
-                      <p className="font-medium">Q4 2025 Financial Statements</p>
-                      <p className="text-sm text-muted-foreground">
-                        Uploaded Jan 5, 2026 - 35 pages
-                      </p>
-                    </div>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800">Extracted</Badge>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -489,51 +538,40 @@ export default async function LoanDetailPage({
               <CardTitle>Audit Trail</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    action: "Covenant test completed",
-                    details: "Q4 2025 - Leverage breach detected",
-                    user: "System",
-                    date: "Jan 6, 2026 10:30 AM",
-                  },
-                  {
-                    action: "Document extracted",
-                    details: "Q4 2025 Compliance Certificate",
-                    user: "AI Extraction",
-                    date: "Jan 5, 2026 3:45 PM",
-                  },
-                  {
-                    action: "Document uploaded",
-                    details: "Q4 2025 Financial Statements",
-                    user: "John Smith",
-                    date: "Jan 5, 2026 3:30 PM",
-                  },
-                  {
-                    action: "Covenant test completed",
-                    details: "Q3 2025 - All covenants compliant",
-                    user: "System",
-                    date: "Oct 15, 2025 11:00 AM",
-                  },
-                ].map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-4 p-4 rounded-lg border"
-                  >
-                    <div className="h-2 w-2 rounded-full bg-primary mt-2" />
-                    <div className="flex-1">
-                      <p className="font-medium">{item.action}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.details}
-                      </p>
+              {auditLogs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p>No audit history available</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {auditLogs.map((log: any) => (
+                    <div
+                      key={log.id}
+                      className="flex items-start gap-4 p-4 rounded-lg border"
+                    >
+                      <div className="h-2 w-2 rounded-full bg-primary mt-2" />
+                      <div className="flex-1">
+                        <p className="font-medium capitalize">{log.action}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {log.entity_type}
+                        </p>
+                      </div>
+                      <div className="text-right text-sm text-muted-foreground">
+                        <p>
+                          {new Date(log.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>{item.user}</p>
-                      <p>{item.date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
