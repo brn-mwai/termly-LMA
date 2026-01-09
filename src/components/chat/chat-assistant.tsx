@@ -1,35 +1,51 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Chat, X, PaperPlaneTilt, CircleNotch, Minus, ArrowsOut } from '@phosphor-icons/react';
+import { Chat, X, PaperPlaneTilt, CircleNotch, Sparkle, ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import { useChat } from './chat-context';
+import { useSidebar } from '@/components/ui/sidebar';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
+const SUGGESTIONS = [
+  'Show me loans in breach',
+  'Which covenants are at warning?',
+  'Summarize my portfolio health',
+  'What documents need review?',
+];
+
 export function ChatAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const { isOpen, closeChat, toggleChat } = useChat();
+  const { setOpen: setSidebarOpen } = useSidebar();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Collapse sidebar when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      setSidebarOpen(false);
+    }
+  }, [isOpen, setSidebarOpen]);
 
   useEffect(() => {
-    if (isOpen && !isMinimized) {
+    if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen, isMinimized]);
+  }, [messages, isOpen]);
 
   useEffect(() => {
-    if (isOpen && !isMinimized) {
+    if (isOpen) {
       inputRef.current?.focus();
     }
-  }, [isOpen, isMinimized]);
+  }, [isOpen]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,139 +87,180 @@ export function ChatAssistant() {
     }
   }
 
+  function handleSuggestionClick(suggestion: string) {
+    setInput(suggestion);
+    inputRef.current?.focus();
+  }
+
+  function clearChat() {
+    setMessages([]);
+  }
+
   return (
     <>
-      {/* Toggle Button */}
+      {/* Toggle Button - Fixed bottom right */}
       <button
-        onClick={() => {
-          setIsOpen(!isOpen);
-          setIsMinimized(false);
-        }}
+        onClick={toggleChat}
         className={cn(
-          'fixed bottom-6 right-6 z-50 rounded-full p-4 shadow-lg transition-all hover:scale-105',
-          isOpen ? 'bg-gray-700 text-white' : 'bg-primary text-primary-foreground'
+          'fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full px-4 py-3 shadow-lg transition-all hover:scale-105',
+          isOpen
+            ? 'bg-muted text-muted-foreground'
+            : 'bg-primary text-primary-foreground'
         )}
       >
-        {isOpen ? <X className="h-6 w-6" /> : <Chat className="h-6 w-6" />}
+        {isOpen ? (
+          <>
+            <ArrowRight className="h-5 w-5" />
+            <span className="text-sm font-medium">Close</span>
+          </>
+        ) : (
+          <>
+            <Sparkle className="h-5 w-5" />
+            <span className="text-sm font-medium">AI Assistant</span>
+          </>
+        )}
       </button>
 
-      {/* Chat Window */}
-      {isOpen && (
-        <div
-          className={cn(
-            'fixed bottom-24 right-6 z-50 flex flex-col rounded-lg bg-background border shadow-2xl transition-all',
-            isMinimized ? 'h-14 w-80' : 'h-[500px] w-[400px]'
-          )}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b px-4 py-3 rounded-t-lg bg-muted/50">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <h3 className="font-semibold">Termly Assistant</h3>
+      {/* Chat Panel - Slides in from right */}
+      <div
+        className={cn(
+          'fixed top-0 right-0 z-40 h-full w-[400px] bg-background border-l shadow-xl transition-transform duration-300 ease-in-out flex flex-col',
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <Sparkle className="h-5 w-5 text-primary" />
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setIsMinimized(!isMinimized)}
-              >
-                {isMinimized ? (
-                  <ArrowsOut className="h-4 w-4" />
-                ) : (
-                  <Minus className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setIsOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+            <div>
+              <h3 className="font-semibold text-sm">Termly Assistant</h3>
+              <div className="flex items-center gap-1.5">
+                <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                <span className="text-xs text-muted-foreground">Online</span>
+              </div>
             </div>
           </div>
+          <div className="flex items-center gap-1">
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearChat}
+                className="text-xs h-8"
+              >
+                Clear
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={closeChat}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-          {!isMinimized && (
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                <Chat className="h-8 w-8 text-primary" />
+              </div>
+              <h4 className="font-semibold mb-2">How can I help you?</h4>
+              <p className="text-sm text-muted-foreground mb-6">
+                Ask me about your loans, covenants, documents, or portfolio analytics.
+              </p>
+              <div className="w-full space-y-2">
+                {SUGGESTIONS.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left text-sm px-4 py-3 rounded-lg border bg-card hover:bg-muted transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
             <>
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.length === 0 && (
-                  <div className="text-center py-8">
-                    <Chat className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-sm text-muted-foreground">
-                      Ask me about your loans, covenants, or portfolio!
-                    </p>
-                    <div className="mt-4 space-y-2">
-                      {[
-                        'Show me loans in breach',
-                        'Which covenants are at warning?',
-                        'Explain leverage ratio',
-                      ].map((suggestion) => (
-                        <button
-                          key={suggestion}
-                          onClick={() => setInput(suggestion)}
-                          className="block w-full text-left text-sm px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {messages.map((msg, i) => (
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    'flex',
+                    msg.role === 'user' ? 'justify-end' : 'justify-start'
+                  )}
+                >
                   <div
-                    key={i}
                     className={cn(
-                      'flex',
-                      msg.role === 'user' ? 'justify-end' : 'justify-start'
+                      'max-w-[85%] rounded-2xl px-4 py-2.5',
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-md'
+                        : 'bg-muted rounded-bl-md'
                     )}
                   >
-                    <div
-                      className={cn(
-                        'max-w-[85%] rounded-lg px-4 py-2',
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      )}
-                    >
-                      <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
-                    </div>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {msg.content}
+                    </p>
                   </div>
-                ))}
-
-                {loading && (
-                  <div className="flex justify-start">
-                    <div className="rounded-lg bg-muted px-4 py-2">
-                      <CircleNotch className="h-5 w-5 animate-spin text-muted-foreground" />
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Input */}
-              <form onSubmit={handleSubmit} className="border-t p-4">
-                <div className="flex gap-2">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ask about your portfolio..."
-                    className="flex-1 rounded-lg border border-input bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <Button type="submit" size="icon" disabled={loading || !input.trim()}>
-                    <PaperPlaneTilt className="h-4 w-4" />
-                  </Button>
                 </div>
-              </form>
+              ))}
+
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="rounded-2xl rounded-bl-md bg-muted px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <CircleNotch className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </>
           )}
         </div>
+
+        {/* Input */}
+        <div className="border-t p-4 bg-muted/20">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your portfolio..."
+              rows={1}
+              className="flex-1 resize-none rounded-xl border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px] max-h-[120px]"
+              style={{ height: 'auto' }}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={loading || !input.trim()}
+              className="h-11 w-11 rounded-xl shrink-0"
+            >
+              <PaperPlaneTilt className="h-5 w-5" />
+            </Button>
+          </form>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Powered by AI · Press Enter to send
+          </p>
+        </div>
+      </div>
+
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/20 md:hidden"
+          onClick={closeChat}
+        />
       )}
     </>
   );
