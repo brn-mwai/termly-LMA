@@ -19,17 +19,16 @@ export function TeamSwitcher() {
         <Link
           href="/dashboard"
           className={`flex items-center hover:opacity-80 transition-opacity ${
-            isCollapsed ? 'justify-center h-16 px-1' : 'justify-start h-14 px-4'
+            isCollapsed ? 'justify-center h-14' : 'justify-start h-14 px-4'
           }`}
         >
           {isCollapsed ? (
             <Image
               src="/logo/Logo-mark.png"
               alt="Termly"
-              width={52}
-              height={52}
+              width={36}
+              height={36}
               className="object-contain"
-              style={{ minWidth: '52px', minHeight: '52px' }}
             />
           ) : (
             <Image
