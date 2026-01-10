@@ -10,6 +10,14 @@
       "schedule": "0 8 * * *"
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.termly.cc" }],
+      "destination": "https://termly.cc/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
