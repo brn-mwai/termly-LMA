@@ -8,43 +8,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import {
-  ChartLineUp,
-  Buildings,
-  Rocket,
   CheckCircle,
   ArrowRight,
   ArrowLeft,
   CircleNotch,
-  Sparkle,
   FileText,
-  Bell,
+  ChartLine,
+  ShieldCheck,
 } from "@phosphor-icons/react";
 import Image from "next/image";
 
-const STEPS = [
-  { id: "welcome", title: "Welcome", icon: Sparkle },
-  { id: "organization", title: "Organization", icon: Buildings },
-  { id: "features", title: "Features", icon: ChartLineUp },
-  { id: "complete", title: "Complete", icon: Rocket },
-];
+const STEPS = ["Welcome", "Organization", "Get Started"];
 
 const FEATURES = [
   {
     icon: FileText,
-    title: "AI Document Extraction",
-    description: "Upload credit agreements and let AI extract covenants automatically",
+    title: "Upload Documents",
+    description: "Credit agreements, compliance certificates, and amendments",
   },
   {
-    icon: ChartLineUp,
-    title: "Real-time Monitoring",
-    description: "Track covenant compliance with live dashboards and alerts",
+    icon: ChartLine,
+    title: "Track Covenants",
+    description: "Monitor compliance status with real-time dashboards",
   },
   {
-    icon: Bell,
-    title: "Smart Alerts",
-    description: "Get notified before breaches happen with predictive warnings",
+    icon: ShieldCheck,
+    title: "Stay Compliant",
+    description: "Receive alerts before breaches occur",
   },
 ];
 
@@ -56,7 +47,6 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
-  // Check if user has already completed onboarding
   useEffect(() => {
     async function checkOnboardingStatus() {
       if (!isLoaded) return;
@@ -117,191 +107,159 @@ export default function OnboardingPage() {
   if (!isLoaded || checkingStatus) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <CircleNotch className="h-8 w-8 animate-spin text-primary" />
+        <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="w-full max-w-2xl space-y-8">
+      <div className="w-full max-w-lg space-y-8">
         {/* Logo */}
         <div className="flex justify-center">
           <Image
             src="/logo/Logo-mark.png"
             alt="Termly"
-            width={64}
-            height={64}
-            className="h-16 w-16"
+            width={48}
+            height={48}
+            className="h-12 w-12"
           />
         </div>
 
-        {/* Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Step {currentStep + 1} of {STEPS.length}</span>
-            <span>{STEPS[currentStep].title}</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-
         {/* Step indicators */}
-        <div className="flex justify-center gap-2">
-          {STEPS.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = index === currentStep;
-            const isComplete = index < currentStep;
-            return (
+        <div className="flex items-center justify-center gap-2">
+          {STEPS.map((step, index) => (
+            <div key={step} className="flex items-center">
               <div
-                key={step.id}
-                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
-                  isActive
-                    ? "bg-primary text-primary-foreground scale-110"
-                    : isComplete
-                    ? "bg-primary/20 text-primary"
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                  index === currentStep
+                    ? "bg-primary text-primary-foreground"
+                    : index < currentStep
+                    ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
-                {isComplete ? (
-                  <CheckCircle className="h-5 w-5" weight="fill" />
+                {index < currentStep ? (
+                  <CheckCircle className="h-4 w-4" weight="bold" />
                 ) : (
-                  <Icon className="h-5 w-5" />
+                  index + 1
                 )}
               </div>
-            );
-          })}
+              {index < STEPS.length - 1 && (
+                <div
+                  className={`w-12 h-0.5 mx-2 ${
+                    index < currentStep ? "bg-primary" : "bg-muted"
+                  }`}
+                />
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Step content */}
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-8">
+        <Card className="border shadow-sm">
+          <CardContent className="p-6">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
               >
+                {/* Step 1: Welcome */}
                 {currentStep === 0 && (
-                  <div className="text-center space-y-6">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
-                      <Sparkle className="h-10 w-10 text-primary" weight="fill" />
-                    </div>
-                    <h1 className="text-3xl font-semibold tracking-tight">
-                      Welcome to Termly, {user?.firstName || "there"}!
-                    </h1>
-                    <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                      Let&apos;s get you set up in just a few steps. You&apos;ll be monitoring
-                      covenants like a pro in no time.
-                    </p>
-                  </div>
-                )}
-
-                {currentStep === 1 && (
                   <div className="space-y-6">
-                    <div className="text-center mb-8">
-                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                        <Buildings className="h-8 w-8 text-primary" />
-                      </div>
-                      <h2 className="text-2xl font-semibold">Your Organization</h2>
-                      <p className="text-muted-foreground mt-2">
-                        Confirm or update your organization name
+                    <div className="text-center space-y-2">
+                      <h1 className="text-2xl font-semibold tracking-tight">
+                        Welcome{user?.firstName ? `, ${user.firstName}` : ""}
+                      </h1>
+                      <p className="text-muted-foreground">
+                        Termly helps you monitor loan covenants and stay compliant.
                       </p>
                     </div>
-                    <div className="max-w-sm mx-auto space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="orgName">Organization Name</Label>
-                        <Input
-                          id="orgName"
-                          value={orgName}
-                          onChange={(e) => setOrgName(e.target.value)}
-                          placeholder="Enter your organization name"
-                          className="h-12 text-lg"
-                        />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        This will be displayed across the platform and in reports.
-                      </p>
-                    </div>
-                  </div>
-                )}
 
-                {currentStep === 2 && (
-                  <div className="space-y-6">
-                    <div className="text-center mb-8">
-                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                        <ChartLineUp className="h-8 w-8 text-primary" />
-                      </div>
-                      <h2 className="text-2xl font-semibold">What You Can Do</h2>
-                      <p className="text-muted-foreground mt-2">
-                        Here&apos;s what Termly helps you accomplish
-                      </p>
-                    </div>
-                    <div className="grid gap-4">
-                      {FEATURES.map((feature, index) => {
+                    <div className="space-y-3 pt-2">
+                      {FEATURES.map((feature) => {
                         const Icon = feature.icon;
                         return (
-                          <motion.div
+                          <div
                             key={feature.title}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                            className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
                           >
-                            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 shrink-0">
-                              <Icon className="h-5 w-5 text-primary" />
-                            </div>
+                            <Icon className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                             <div>
-                              <h3 className="font-medium">{feature.title}</h3>
+                              <p className="font-medium text-sm">{feature.title}</p>
                               <p className="text-sm text-muted-foreground">
                                 {feature.description}
                               </p>
                             </div>
-                          </motion.div>
+                          </div>
                         );
                       })}
                     </div>
                   </div>
                 )}
 
-                {currentStep === 3 && (
-                  <div className="text-center space-y-6">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", duration: 0.5 }}
-                      className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4"
-                    >
-                      <CheckCircle className="h-10 w-10 text-green-600" weight="fill" />
-                    </motion.div>
-                    <h2 className="text-3xl font-semibold">You&apos;re All Set!</h2>
-                    <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                      Your account is ready. Start by uploading your first credit
-                      agreement or exploring the demo data.
-                    </p>
-                    <div className="pt-4">
-                      <Button
-                        size="lg"
-                        onClick={handleComplete}
-                        disabled={loading}
-                        className="gap-2"
-                      >
-                        {loading ? (
-                          <>
-                            <CircleNotch className="h-5 w-5 animate-spin" />
-                            Setting up...
-                          </>
-                        ) : (
-                          <>
-                            Go to Dashboard
-                            <Rocket className="h-5 w-5" />
-                          </>
-                        )}
-                      </Button>
+                {/* Step 2: Organization */}
+                {currentStep === 1 && (
+                  <div className="space-y-6">
+                    <div className="text-center space-y-2">
+                      <h2 className="text-2xl font-semibold tracking-tight">
+                        Your Organization
+                      </h2>
+                      <p className="text-muted-foreground">
+                        Confirm your organization name
+                      </p>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="orgName">Organization Name</Label>
+                      <Input
+                        id="orgName"
+                        value={orgName}
+                        onChange={(e) => setOrgName(e.target.value)}
+                        placeholder="Enter organization name"
+                        className="h-11"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        This appears in reports and across the platform.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Get Started */}
+                {currentStep === 2 && (
+                  <div className="space-y-6">
+                    <div className="text-center space-y-2">
+                      <div className="flex justify-center mb-4">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100">
+                          <CheckCircle className="h-6 w-6 text-green-600" weight="fill" />
+                        </div>
+                      </div>
+                      <h2 className="text-2xl font-semibold tracking-tight">
+                        You&apos;re ready
+                      </h2>
+                      <p className="text-muted-foreground">
+                        Start by uploading a document or explore the demo data.
+                      </p>
+                    </div>
+
+                    <Button
+                      className="w-full h-11"
+                      onClick={handleComplete}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <CircleNotch className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          Go to Dashboard
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
                   </div>
                 )}
               </motion.div>
@@ -309,36 +267,34 @@ export default function OnboardingPage() {
           </CardContent>
         </Card>
 
-        {/* Navigation buttons */}
-        {currentStep < 3 && (
+        {/* Navigation */}
+        {currentStep < 2 && (
           <div className="flex justify-between">
             <Button
               variant="ghost"
+              size="sm"
               onClick={prevStep}
               disabled={currentStep === 0}
-              className="gap-2"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 mr-1" />
               Back
             </Button>
-            <Button onClick={nextStep} className="gap-2">
+            <Button size="sm" onClick={nextStep}>
               Continue
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
         )}
 
-        {/* Skip link */}
-        {currentStep < 3 && (
-          <div className="text-center">
-            <button
-              onClick={handleComplete}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Skip onboarding and go to dashboard
-            </button>
-          </div>
-        )}
+        {/* Skip */}
+        <div className="text-center">
+          <button
+            onClick={handleComplete}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Skip and go to dashboard
+          </button>
+        </div>
       </div>
     </div>
   );
