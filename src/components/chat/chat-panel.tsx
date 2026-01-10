@@ -61,33 +61,54 @@ export function ChatPanel() {
   const [interimTranscript, setInterimTranscript] = useState('');
   const recognitionRef = useRef<any>(null);
 
-  // Monty Lottie animation
+  // Monty Lottie animation with state machine
   const dotLottieRef = useRef<DotLottie | null>(null);
-  const peekIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const peekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Replay Monty's animation occasionally
-  const replayMonty = useCallback(() => {
+  // Fire peekEvent to trigger the peek animation
+  const triggerPeek = useCallback(() => {
     if (dotLottieRef.current) {
-      dotLottieRef.current.setFrame(0);
-      dotLottieRef.current.play();
+      try {
+        // Fire the peekEvent trigger in state machine
+        (dotLottieRef.current as any).stateMachineFireTrigger?.('peekEvent');
+      } catch (e) {
+        console.log('State machine trigger failed:', e);
+      }
     }
   }, []);
 
-  // Schedule random peek animations
+  // Schedule random peek animations when chat is closed
+  const schedulePeek = useCallback(() => {
+    // Random delay between 8-15 seconds
+    const delay = 8000 + Math.random() * 7000;
+
+    peekTimeoutRef.current = setTimeout(() => {
+      if (!isOpen) {
+        triggerPeek();
+      }
+      schedulePeek();
+    }, delay);
+  }, [isOpen, triggerPeek]);
+
   useEffect(() => {
     if (!isOpen) {
-      // Schedule occasional peeks every 10-20 seconds
-      peekIntervalRef.current = setInterval(() => {
-        replayMonty();
-      }, 10000 + Math.random() * 10000);
+      // Start scheduling peeks after initial delay
+      const initialDelay = setTimeout(() => {
+        schedulePeek();
+      }, 5000);
 
       return () => {
-        if (peekIntervalRef.current) {
-          clearInterval(peekIntervalRef.current);
+        clearTimeout(initialDelay);
+        if (peekTimeoutRef.current) {
+          clearTimeout(peekTimeoutRef.current);
         }
       };
+    } else {
+      if (peekTimeoutRef.current) {
+        clearTimeout(peekTimeoutRef.current);
+      }
     }
-  }, [isOpen, replayMonty]);
+  }, [isOpen, schedulePeek]);
 
   useEffect(() => {
     if (isOpen) {
@@ -275,8 +296,7 @@ export function ChatPanel() {
         <DotLottieReact
           src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
           autoplay
-          loop={false}
-          speed={1}
+          stateMachineId="StateMachine1"
           dotLottieRefCallback={(ref) => {
             dotLottieRef.current = ref;
           }}
@@ -295,7 +315,7 @@ export function ChatPanel() {
             <DotLottieReact
               src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
               autoplay
-              loop={false}
+              stateMachineId="StateMachine1"
               className="w-full h-full scale-110"
             />
           </div>
@@ -334,7 +354,7 @@ export function ChatPanel() {
               <DotLottieReact
                 src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
                 autoplay
-                loop={false}
+                stateMachineId="StateMachine1"
                 className="w-full h-full scale-110"
               />
             </div>
