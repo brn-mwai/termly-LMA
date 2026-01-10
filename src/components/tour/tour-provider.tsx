@@ -130,7 +130,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
           element: '[data-tour="nav-analytics"]',
           popover: {
             title: "Analytics",
-            description: "Interactive Tableau dashboards for deep portfolio analysis and trend visualization.",
+            description: "Portfolio analytics and reporting dashboards (coming soon).",
             side: "right",
             align: "center",
           },
