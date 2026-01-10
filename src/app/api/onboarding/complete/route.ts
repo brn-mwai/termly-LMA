@@ -6,22 +6,39 @@ import { sendWelcomeEmail } from '@/lib/email/service';
 
 export async function POST(request: Request) {
   try {
+    // Check environment variables first
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY is not set');
+      return errorResponse('CONFIG_ERROR', 'Server configuration error', 500);
+    }
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      console.error('NEXT_PUBLIC_SUPABASE_URL is not set');
+      return errorResponse('CONFIG_ERROR', 'Server configuration error', 500);
+    }
+
     const { userId } = await auth();
+    console.log('Onboarding: userId =', userId);
     if (!userId) {
       return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
     }
 
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
+
+    // Test admin client connection
+    console.log('Testing admin client connection...');
     const body = await request.json();
 
     // Get user's organization and full details (use admin client to bypass RLS)
+    console.log('Looking up user with clerk_id:', userId);
     const { data: existingUser, error: userError } = await adminSupabase
       .from('users')
       .select('id, email, full_name, organization_id')
       .eq('clerk_id', userId)
       .is('deleted_at', null)
       .single();
+
+    console.log('User lookup result:', { existingUser, userError: userError?.message });
 
     let userData = existingUser as { id: string; email: string; full_name: string | null; organization_id: string } | null;
 
@@ -180,9 +197,14 @@ export async function POST(request: Request) {
       });
     }
 
+    console.log('Onboarding completed successfully for user:', userId);
     return successResponse({ success: true });
   } catch (error) {
     console.error('Onboarding complete error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return handleApiError(error);
   }
 }
