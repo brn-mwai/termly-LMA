@@ -14,10 +14,10 @@ interface Message {
 }
 
 const SUGGESTIONS = [
-  'Show me loans in breach',
-  'Which covenants are at warning?',
-  'Summarize my portfolio health',
-  'What documents need review?',
+  '🚨 Show me loans in breach',
+  '⚠️ Which covenants are at warning?',
+  '📊 Summarize my portfolio health',
+  '📄 What documents need review?',
 ];
 
 // Speech Recognition types
