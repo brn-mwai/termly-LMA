@@ -56,7 +56,7 @@ export default function SignUpPage() {
           socialButtonsVariant: "blockButton",
         },
       }}
-      forceRedirectUrl="/dashboard"
+      forceRedirectUrl="/onboarding"
     />
   );
 }
