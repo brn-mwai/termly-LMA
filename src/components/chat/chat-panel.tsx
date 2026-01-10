@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Chat, X, CircleNotch, Sparkle, Paperclip, Microphone, MicrophoneSlash, ArrowUp, File } from '@phosphor-icons/react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Chat, X, CircleNotch, Paperclip, Microphone, MicrophoneSlash, ArrowUp, File } from '@phosphor-icons/react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import type { DotLottie } from '@lottiefiles/dotlottie-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { useChat } from './chat-context';
@@ -58,6 +60,38 @@ export function ChatPanel() {
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
   const recognitionRef = useRef<any>(null);
+
+  // Monty Lottie animation
+  const dotLottieRef = useRef<DotLottie | null>(null);
+  const blinkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Schedule random blinks for Monty
+  const scheduleBlink = useCallback(() => {
+    // Random delay between 3-8 seconds
+    const delay = 3000 + Math.random() * 5000;
+
+    blinkTimeoutRef.current = setTimeout(() => {
+      if (dotLottieRef.current && !isOpen) {
+        // Fire the blink trigger
+        dotLottieRef.current.stateMachineSetBooleanInput('doBlink', true);
+      }
+      // Schedule next blink
+      scheduleBlink();
+    }, delay);
+  }, [isOpen]);
+
+  // Start blink scheduling when component mounts
+  useEffect(() => {
+    if (!isOpen) {
+      scheduleBlink();
+    }
+
+    return () => {
+      if (blinkTimeoutRef.current) {
+        clearTimeout(blinkTimeoutRef.current);
+      }
+    };
+  }, [isOpen, scheduleBlink]);
 
   useEffect(() => {
     if (isOpen) {
@@ -234,15 +268,24 @@ export function ChatPanel() {
     };
   }, []);
 
-  // Floating button when panel is closed
+  // Floating button when panel is closed - Monty the cat
   if (!isOpen) {
     return (
       <button
         onClick={handleOpenChat}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
-        title="Open AI Assistant"
+        className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform overflow-hidden"
+        title="Chat with Monty"
       >
-        <Sparkle className="h-6 w-6" weight="fill" />
+        <DotLottieReact
+          src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
+          autoplay
+          loop={false}
+          stateMachineId="StateMachine1"
+          dotLottieRefCallback={(ref) => {
+            dotLottieRef.current = ref;
+          }}
+          className="w-full h-full"
+        />
       </button>
     );
   }
@@ -252,8 +295,14 @@ export function ChatPanel() {
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-            <Sparkle className="h-4 w-4 text-primary" />
+          <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0">
+            <DotLottieReact
+              src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
+              autoplay
+              loop={false}
+              stateMachineId="StateMachine1"
+              className="w-full h-full scale-110"
+            />
           </div>
           <div>
             <h3 className="font-medium text-base">Monty</h3>
@@ -286,8 +335,14 @@ export function ChatPanel() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-2">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mb-4">
-              <Chat className="h-7 w-7 text-primary" />
+            <div className="h-20 w-20 rounded-full overflow-hidden mb-4">
+              <DotLottieReact
+                src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
+                autoplay
+                loop={false}
+                stateMachineId="StateMachine1"
+                className="w-full h-full scale-110"
+              />
             </div>
             <h4 className="font-medium text-base mb-1">How can I help you?</h4>
             <p className="text-xs text-muted-foreground mb-4">
