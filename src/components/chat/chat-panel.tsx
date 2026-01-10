@@ -63,35 +63,31 @@ export function ChatPanel() {
 
   // Monty Lottie animation
   const dotLottieRef = useRef<DotLottie | null>(null);
-  const blinkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const peekIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Schedule random blinks for Monty
-  const scheduleBlink = useCallback(() => {
-    // Random delay between 3-8 seconds
-    const delay = 3000 + Math.random() * 5000;
+  // Replay Monty's animation occasionally
+  const replayMonty = useCallback(() => {
+    if (dotLottieRef.current) {
+      dotLottieRef.current.setFrame(0);
+      dotLottieRef.current.play();
+    }
+  }, []);
 
-    blinkTimeoutRef.current = setTimeout(() => {
-      if (dotLottieRef.current && !isOpen) {
-        // Fire the blink trigger
-        dotLottieRef.current.stateMachineSetBooleanInput('doBlink', true);
-      }
-      // Schedule next blink
-      scheduleBlink();
-    }, delay);
-  }, [isOpen]);
-
-  // Start blink scheduling when component mounts
+  // Schedule random peek animations
   useEffect(() => {
     if (!isOpen) {
-      scheduleBlink();
-    }
+      // Schedule occasional peeks every 10-20 seconds
+      peekIntervalRef.current = setInterval(() => {
+        replayMonty();
+      }, 10000 + Math.random() * 10000);
 
-    return () => {
-      if (blinkTimeoutRef.current) {
-        clearTimeout(blinkTimeoutRef.current);
-      }
-    };
-  }, [isOpen, scheduleBlink]);
+      return () => {
+        if (peekIntervalRef.current) {
+          clearInterval(peekIntervalRef.current);
+        }
+      };
+    }
+  }, [isOpen, replayMonty]);
 
   useEffect(() => {
     if (isOpen) {
@@ -280,7 +276,7 @@ export function ChatPanel() {
           src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
           autoplay
           loop={false}
-          stateMachineId="StateMachine1"
+          speed={1}
           dotLottieRefCallback={(ref) => {
             dotLottieRef.current = ref;
           }}
@@ -300,7 +296,6 @@ export function ChatPanel() {
               src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
               autoplay
               loop={false}
-              stateMachineId="StateMachine1"
               className="w-full h-full scale-110"
             />
           </div>
@@ -340,7 +335,6 @@ export function ChatPanel() {
                 src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
                 autoplay
                 loop={false}
-                stateMachineId="StateMachine1"
                 className="w-full h-full scale-110"
               />
             </div>
