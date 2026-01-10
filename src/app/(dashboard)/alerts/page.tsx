@@ -1,27 +1,14 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Warning,
   WarningCircle,
   Info,
-  Eye,
-  CheckCircle,
   Bell,
 } from "@phosphor-icons/react/dist/ssr";
-import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
+import { AlertsTable } from "@/components/alerts";
 
 interface Alert {
   id: string;
@@ -96,37 +83,6 @@ async function getAlerts(): Promise<Alert[]> {
   }));
 }
 
-function getSeverityIcon(severity: Alert["severity"]) {
-  switch (severity) {
-    case "critical":
-      return <Warning className="h-5 w-5 text-red-600" />;
-    case "warning":
-      return <WarningCircle className="h-5 w-5 text-yellow-600" />;
-    case "info":
-      return <Info className="h-5 w-5 text-blue-600" />;
-  }
-}
-
-function getSeverityBadge(severity: Alert["severity"]) {
-  const variants = {
-    critical: "bg-red-100 text-red-800",
-    warning: "bg-yellow-100 text-yellow-800",
-    info: "bg-blue-100 text-blue-800",
-  };
-
-  const labels = {
-    critical: "Critical",
-    warning: "Warning",
-    info: "Info",
-  };
-
-  return (
-    <Badge variant="secondary" className={variants[severity]}>
-      {labels[severity]}
-    </Badge>
-  );
-}
-
 export default async function AlertsPage() {
   const alerts = await getAlerts();
   const unacknowledgedAlerts = alerts.filter((a) => !a.acknowledged);
@@ -161,31 +117,31 @@ export default async function AlertsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-red-800">
+            <CardTitle className="text-sm font-medium text-red-800 dark:text-red-400">
               Critical
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <Warning className="h-5 w-5 text-red-600" />
-              <span className="text-2xl font-bold text-red-800">
+              <Warning className="h-5 w-5 text-red-600 dark:text-red-500" />
+              <span className="text-2xl font-bold text-red-800 dark:text-red-400">
                 {criticalAlerts.length}
               </span>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-yellow-200 bg-yellow-50">
+        <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-800">
+            <CardTitle className="text-sm font-medium text-yellow-800 dark:text-yellow-400">
               Warnings
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <WarningCircle className="h-5 w-5 text-yellow-600" />
-              <span className="text-2xl font-bold text-yellow-800">
+              <WarningCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+              <span className="text-2xl font-bold text-yellow-800 dark:text-yellow-400">
                 {warningAlerts.length}
               </span>
             </div>
@@ -221,122 +177,17 @@ export default async function AlertsPage() {
         </TabsList>
 
         <TabsContent value="unacknowledged">
-          <AlertTable alerts={unacknowledgedAlerts} />
+          <AlertsTable alerts={unacknowledgedAlerts} />
         </TabsContent>
 
         <TabsContent value="all">
-          <AlertTable alerts={alerts} />
+          <AlertsTable alerts={alerts} />
         </TabsContent>
 
         <TabsContent value="acknowledged">
-          <AlertTable alerts={acknowledgedAlerts} />
+          <AlertsTable alerts={acknowledgedAlerts} />
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-function AlertTable({ alerts }: { alerts: Alert[] }) {
-  if (alerts.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
-          <h3 className="text-lg font-medium">No alerts</h3>
-          <p className="text-muted-foreground">
-            All clear - no alerts to display
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Severity</TableHead>
-              <TableHead>Alert</TableHead>
-              <TableHead>Loan</TableHead>
-              <TableHead>Covenant</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {alerts.map((alert) => (
-              <TableRow key={alert.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {getSeverityIcon(alert.severity)}
-                    {getSeverityBadge(alert.severity)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{alert.title}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-1">
-                      {alert.message}
-                    </p>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{alert.borrower}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {alert.loanName}
-                    </p>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {alert.covenantType ? (
-                    <Badge variant="outline">{alert.covenantType}</Badge>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDistanceToNow(alert.createdAt, { addSuffix: true })}
-                </TableCell>
-                <TableCell>
-                  {alert.acknowledged ? (
-                    <Badge
-                      variant="secondary"
-                      className="bg-gray-100 text-gray-800"
-                    >
-                      Acknowledged
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="secondary"
-                      className="bg-blue-100 text-blue-800"
-                    >
-                      New
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {!alert.acknowledged && (
-                      <Button variant="ghost" size="sm">
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={`/loans/${alert.loanId}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
   );
 }
