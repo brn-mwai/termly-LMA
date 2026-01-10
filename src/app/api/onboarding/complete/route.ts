@@ -56,7 +56,9 @@ export async function POST(request: Request) {
 
       if (existingOrg) {
         orgId = existingOrg.id;
+        console.log(`Using existing org: ${orgId}`);
       } else {
+        console.log(`Creating new org with slug: ${orgSlug}`);
         const { data: newOrg, error: orgError } = await adminSupabase
           .from('organizations')
           .insert({
@@ -67,13 +69,19 @@ export async function POST(request: Request) {
           .single();
 
         if (orgError) {
-          console.error('Failed to create organization:', orgError);
-          return errorResponse('ORG_CREATE_FAILED', 'Failed to create organization', 500);
+          console.error('Failed to create organization:', JSON.stringify(orgError));
+          return errorResponse('ORG_CREATE_FAILED', `Failed to create organization: ${orgError.message}`, 500);
+        }
+        if (!newOrg) {
+          console.error('No organization returned after insert');
+          return errorResponse('ORG_CREATE_FAILED', 'Organization was not created', 500);
         }
         orgId = newOrg.id;
+        console.log(`Created org: ${orgId}`);
       }
 
       // Create user
+      console.log(`Creating user with clerk_id: ${userId}, org_id: ${orgId}`);
       const { data: newUser, error: createError } = await adminSupabase
         .from('users')
         .insert({
@@ -87,8 +95,12 @@ export async function POST(request: Request) {
         .single();
 
       if (createError) {
-        console.error('Failed to create user:', createError);
-        return errorResponse('USER_CREATE_FAILED', 'Failed to create user', 500);
+        console.error('Failed to create user:', JSON.stringify(createError));
+        return errorResponse('USER_CREATE_FAILED', `Failed to create user: ${createError.message}`, 500);
+      }
+      if (!newUser) {
+        console.error('No user returned after insert');
+        return errorResponse('USER_CREATE_FAILED', 'User was not created', 500);
       }
 
       userData = newUser as { id: string; email: string; full_name: string | null; organization_id: string };
