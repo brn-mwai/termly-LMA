@@ -703,7 +703,7 @@ export async function sendWelcomeEmail(
     organizationName: string;
   }
 ): Promise<EmailResult> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://termly.cc';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.termly.cc';
   const template = emailTemplates.welcome({
     ...data,
     dashboardUrl: `${baseUrl}/dashboard`,
@@ -724,7 +724,7 @@ export async function sendUserInvitationEmail(
     role: string;
   }
 ): Promise<EmailResult> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://termly.cc';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.termly.cc';
   const template = emailTemplates.userInvitation({
     ...data,
     inviteUrl: `${baseUrl}/sign-up?invited=true`,
@@ -750,7 +750,7 @@ export async function sendDocumentProcessedEmail(
     financialPeriodsFound: number;
   }
 ): Promise<EmailResult> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://termly.cc';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.termly.cc';
   const template = emailTemplates.documentProcessed({
     ...data,
     documentUrl: `${baseUrl}/documents/${data.documentId}`,
@@ -776,7 +776,7 @@ export async function sendUpcomingTestReminderEmail(
     }>;
   }
 ): Promise<EmailResult> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://termly.cc';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.termly.cc';
   const template = emailTemplates.upcomingTestReminder({
     ...data,
     dashboardUrl: `${baseUrl}/dashboard`,

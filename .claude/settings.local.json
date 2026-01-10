@@ -37,7 +37,9 @@
       "Bash(ss:*)",
       "Bash(npm run lint)",
       "Bash(npm run lint:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "WebFetch(domain:resend.com)",
+      "Bash(echo:*)"
     ]
   }
 }

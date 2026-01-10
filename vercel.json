@@ -13,8 +13,8 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.termly.cc" }],
-      "destination": "https://termly.cc/:path*",
+      "has": [{ "type": "host", "value": "termly.cc" }],
+      "destination": "https://www.termly.cc/:path*",
       "permanent": true
     }
   ],
