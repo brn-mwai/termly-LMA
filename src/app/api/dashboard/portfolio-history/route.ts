@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import { format, subDays } from "date-fns";
 
@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") || "30d";
 
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
       .from("users")
       .select("organization_id")
       .eq("clerk_id", userId)
+      .is("deleted_at", null)
       .single();
 
     const orgId = (userData as { organization_id: string } | null)?.organization_id;

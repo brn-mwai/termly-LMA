@@ -68,7 +68,13 @@ export async function POST(request: Request) {
       .is('deleted_at', null)
       .single();
 
-    if (userError || !userData?.organization_id) {
+    if (userError) {
+      console.error('Chat user lookup error:', userError);
+      return errorResponse('FORBIDDEN', `User lookup failed: ${userError.message}`, 403);
+    }
+
+    if (!userData?.organization_id) {
+      console.error('Chat: User has no organization_id, userId:', userId);
       return errorResponse('FORBIDDEN', 'User organization not found', 403);
     }
 
