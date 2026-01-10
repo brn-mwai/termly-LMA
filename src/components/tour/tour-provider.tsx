@@ -130,7 +130,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
           element: '[data-tour="nav-analytics"]',
           popover: {
             title: "Analytics",
-            description: "Portfolio analytics and reporting dashboards (coming soon).",
+            description: "AI-powered portfolio insights, risk scoring, and compliance trends. Get intelligent recommendations.",
             side: "right",
             align: "center",
           },

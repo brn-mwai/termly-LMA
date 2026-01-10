@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { chat, ChatMessage } from '@/lib/ai/client';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { withRateLimit } from '@/lib/utils/rate-limit-middleware';
 
 interface PortfolioMetrics {
@@ -47,21 +47,22 @@ export async function GET(request: Request) {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS
+    const supabase = createAdminClient();
 
     // Get user's org
-    const { data: userData } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) {
+    if (userError || !userData?.organization_id) {
       return errorResponse('FORBIDDEN', 'User organization not found', 403);
     }
 
-    const orgId = user.organization_id;
+    const orgId = userData.organization_id;
 
     // Fetch all analytics data in parallel
     const [
