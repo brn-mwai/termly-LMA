@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { driver, Driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import { usePathname, useRouter } from "next/navigation";
@@ -14,44 +14,38 @@ interface TourContextType {
 const TourContext = createContext<TourContextType | null>(null);
 
 const TOUR_STORAGE_KEY = "termly_tour_completed";
-const FIRST_VISIT_KEY = "termly_first_visit";
+const SHOW_TOUR_KEY = "termly_show_tour";
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const [driverObj, setDriverObj] = useState<Driver | null>(null);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const tourStartedRef = useRef(false);
 
-  // Check if this is the user's first visit
+  // Initialize tour on mount and check for auto-start flag
   useEffect(() => {
     const tourCompleted = localStorage.getItem(TOUR_STORAGE_KEY);
-    const firstVisit = localStorage.getItem(FIRST_VISIT_KEY);
+    const shouldShowTour = localStorage.getItem(SHOW_TOUR_KEY);
 
-    if (!firstVisit) {
-      localStorage.setItem(FIRST_VISIT_KEY, "true");
+    // Clear the show tour flag
+    if (shouldShowTour) {
+      localStorage.removeItem(SHOW_TOUR_KEY);
       setIsFirstVisit(true);
     }
 
-    if (!tourCompleted && pathname === "/dashboard") {
-      // Auto-start tour on first dashboard visit
+    // Auto-start tour if coming from onboarding or first visit
+    if (!tourCompleted && pathname === "/dashboard" && !tourStartedRef.current) {
+      tourStartedRef.current = true;
+      // Small delay to let the page render
       const timer = setTimeout(() => {
-        startTour();
-      }, 1000);
+        initTour();
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [pathname]);
 
-  const startTour = useCallback(() => {
-    // Make sure we're on the dashboard
-    if (pathname !== "/dashboard") {
-      router.push("/dashboard");
-      setTimeout(() => initTour(), 500);
-    } else {
-      initTour();
-    }
-  }, [pathname, router]);
-
-  const initTour = () => {
+  const initTour = useCallback(() => {
     const driverInstance = driver({
       showProgress: true,
       animate: true,
@@ -152,7 +146,19 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
     setDriverObj(driverInstance);
     driverInstance.drive();
-  };
+  }, []);
+
+  const startTour = useCallback(() => {
+    // Reset the ref so tour can start again
+    tourStartedRef.current = false;
+    // Make sure we're on the dashboard
+    if (pathname !== "/dashboard") {
+      router.push("/dashboard");
+      setTimeout(() => initTour(), 500);
+    } else {
+      initTour();
+    }
+  }, [pathname, router, initTour]);
 
   const setFirstVisitComplete = useCallback(() => {
     setIsFirstVisit(false);

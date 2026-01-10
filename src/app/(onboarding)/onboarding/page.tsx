@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 import {
   CheckCircle,
   ArrowRight,
@@ -83,10 +84,21 @@ export default function OnboardingPage() {
       });
 
       if (res.ok) {
-        router.push("/dashboard");
+        // Set flag for tour to auto-start
+        localStorage.setItem("termly_show_tour", "true");
+        // Use window.location for a full page navigation to ensure fresh state
+        window.location.href = "/dashboard";
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error("Something went wrong", {
+          description: errorData.error?.message || "Failed to complete onboarding. Please try again.",
+        });
       }
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
+      toast.error("Connection error", {
+        description: "Please check your connection and try again.",
+      });
     } finally {
       setLoading(false);
     }
