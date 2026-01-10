@@ -195,19 +195,35 @@ export async function POST(request: Request) {
       return errorResponse('UPDATE_FAILED', 'Failed to complete onboarding', 500);
     }
 
-    // Send welcome email
-    if (user.email) {
-      const userName = user.full_name || user.email.split('@')[0];
-      sendWelcomeEmail(user.email, {
-        userName,
-        organizationName,
-      }).catch((err) => {
-        console.error('Failed to send welcome email:', err);
-      });
+    console.log('Onboarding database update successful');
+
+    // Send welcome email (non-blocking, fully wrapped in try-catch)
+    try {
+      if (user.email) {
+        const userName = user.full_name || user.email.split('@')[0];
+        console.log('Attempting to send welcome email to:', user.email);
+        // Don't await - fire and forget
+        sendWelcomeEmail(user.email, {
+          userName,
+          organizationName,
+        }).then(() => {
+          console.log('Welcome email sent successfully');
+        }).catch((err) => {
+          console.error('Failed to send welcome email:', err);
+        });
+      }
+    } catch (emailError) {
+      // Log but don't fail onboarding if email fails
+      console.error('Email error (non-fatal):', emailError);
     }
 
     console.log('Onboarding completed successfully for user:', userId);
-    return successResponse({ success: true });
+
+    // Return success directly with NextResponse to avoid any issues with successResponse
+    return new Response(JSON.stringify({ data: { success: true } }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Onboarding complete error:', error);
     console.error('Error details:', {
