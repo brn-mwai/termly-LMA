@@ -1,8 +1,8 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { chat, agentChat, ChatMessage, getAnthropicClient } from '@/lib/ai/client';
 import { MONTY_TOOLS, executeTool } from '@/lib/ai/tools';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { withRateLimit } from '@/lib/utils/rate-limit-middleware';
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -52,7 +52,8 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS
+    const supabase = createAdminClient();
     const { message, history = [] } = await request.json();
 
     if (!message) {
@@ -60,26 +61,28 @@ export async function POST(request: Request) {
     }
 
     // Get user's org for context
-    const { data: userData } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) {
+    if (userError || !userData?.organization_id) {
       return errorResponse('FORBIDDEN', 'User organization not found', 403);
     }
+
+    const organizationId = userData.organization_id;
 
     // Check if Claude is available for agent mode
     const anthropicAvailable = !!getAnthropicClient();
 
     if (anthropicAvailable) {
       // Use agent mode with tools
-      return await handleAgentChat(message, history, supabase, user.organization_id);
+      return await handleAgentChat(message, history, supabase, organizationId);
     } else {
       // Fallback to simple chat without tools
-      return await handleSimpleChat(message, history, supabase, user.organization_id);
+      return await handleSimpleChat(message, history, supabase, organizationId);
     }
   } catch (error) {
     console.error('Chat error:', error);
