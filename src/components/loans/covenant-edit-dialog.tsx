@@ -37,11 +37,11 @@ interface Covenant {
 
 interface CovenantEditDialogProps {
   covenant: Covenant;
-  loanId: string;
+  loanId?: string; // Reserved for future use
   trigger?: React.ReactNode;
 }
 
-export function CovenantEditDialog({ covenant, loanId, trigger }: CovenantEditDialogProps) {
+export function CovenantEditDialog({ covenant, trigger }: CovenantEditDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);

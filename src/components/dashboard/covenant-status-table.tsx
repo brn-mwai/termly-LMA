@@ -23,7 +23,6 @@ import {
 import { Eye, TrendDown, TrendUp, CaretUp, CaretDown, Funnel, FileText } from "@phosphor-icons/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { staggerContainer, staggerItem } from "@/lib/animations";
 
 interface CovenantStatus {
   id: string;

@@ -1,5 +1,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
+// Type definitions for database entities
+interface CovenantTest {
+  id: string;
+  status: string;
+  tested_at: string;
+  actual_value?: number;
+  headroom?: number;
+}
+
 // Tool definitions for Monty's agentic capabilities
 export const MONTY_TOOLS = [
   {
@@ -188,7 +197,7 @@ async function getPortfolioSummary(supabase: SupabaseClient, orgId: string): Pro
   const alerts = alertsData || [];
 
   // Get covenants for org's loans, then get tests
-  let tests: any[] = [];
+  let tests: CovenantTest[] = [];
   if (loanIds.length > 0) {
     const { data: covenants } = await supabase
       .from('covenants')
@@ -274,18 +283,31 @@ async function getLoans(
     return JSON.stringify({ error: error.message });
   }
 
-  const loans = (data || []).map((loan: any) => ({
-    id: loan.id,
-    name: loan.name,
-    borrower: loan.borrowers?.name || 'Unknown',
-    industry: loan.borrowers?.industry || 'Unknown',
-    type: loan.facility_type,
-    commitment: formatCurrency(loan.commitment_amount),
-    outstanding: formatCurrency(loan.outstanding_amount),
-    utilization: `${((loan.outstanding_amount / loan.commitment_amount) * 100).toFixed(1)}%`,
-    status: loan.status,
-    maturity: loan.maturity_date,
-  }));
+  interface LoanWithBorrower {
+    id: string;
+    name: string;
+    borrowers?: { name: string; industry?: string } | Array<{ name: string; industry?: string }>;
+    facility_type: string;
+    commitment_amount: number;
+    outstanding_amount: number;
+    status: string;
+    maturity_date: string;
+  }
+  const loans = ((data || []) as unknown as LoanWithBorrower[]).map((loan) => {
+    const borrower = Array.isArray(loan.borrowers) ? loan.borrowers[0] : loan.borrowers;
+    return {
+      id: loan.id,
+      name: loan.name,
+      borrower: borrower?.name || 'Unknown',
+      industry: borrower?.industry || 'Unknown',
+      type: loan.facility_type,
+      commitment: formatCurrency(loan.commitment_amount),
+      outstanding: formatCurrency(loan.outstanding_amount),
+      utilization: `${((loan.outstanding_amount / loan.commitment_amount) * 100).toFixed(1)}%`,
+      status: loan.status,
+      maturity: loan.maturity_date,
+    };
+  });
 
   return JSON.stringify({ loans, count: loans.length }, null, 2);
 }
@@ -332,7 +354,18 @@ async function getLoanDetails(
     return JSON.stringify({ error: 'Loan not found' });
   }
 
-  const loan = loans as any;
+  interface LoanDetails {
+    id: string;
+    name: string;
+    facility_type: string;
+    commitment_amount: number;
+    outstanding_amount: number;
+    status: string;
+    maturity_date: string;
+    interest_rate?: number;
+    borrowers?: { id: string; name: string; industry?: string; rating?: string } | Array<{ id: string; name: string; industry?: string; rating?: string }>;
+  }
+  const loan = loans as unknown as LoanDetails;
 
   // Get covenants with latest tests
   const { data: covenants } = await supabase
@@ -354,8 +387,21 @@ async function getLoanDetails(
     .eq('loan_id', loan.id)
     .is('deleted_at', null);
 
-  const covenantDetails = (covenants || []).map((c: any) => {
-    const latestTest = c.covenant_tests?.sort((a: any, b: any) =>
+  interface CovenantWithTests {
+    name: string;
+    type: string;
+    operator: string;
+    threshold: number;
+    testing_frequency: string;
+    covenant_tests?: Array<{
+      calculated_value: number;
+      status: string;
+      headroom_percentage: number;
+      tested_at: string;
+    }>;
+  }
+  const covenantDetails = ((covenants || []) as unknown as CovenantWithTests[]).map((c) => {
+    const latestTest = c.covenant_tests?.sort((a, b) =>
       new Date(b.tested_at).getTime() - new Date(a.tested_at).getTime()
     )[0];
 
@@ -371,13 +417,14 @@ async function getLoanDetails(
     };
   });
 
+  const borrower = Array.isArray(loan.borrowers) ? loan.borrowers[0] : loan.borrowers;
   const result = {
     loan: {
       id: loan.id,
       name: loan.name,
-      borrower: loan.borrowers?.name || 'Unknown',
-      industry: loan.borrowers?.industry || 'Unknown',
-      rating: loan.borrowers?.rating || 'Not rated',
+      borrower: borrower?.name || 'Unknown',
+      industry: borrower?.industry || 'Unknown',
+      rating: borrower?.rating || 'Not rated',
       type: loan.facility_type,
       commitment: formatCurrency(loan.commitment_amount),
       outstanding: formatCurrency(loan.outstanding_amount),
@@ -428,7 +475,16 @@ async function getAlerts(
     return JSON.stringify({ error: error.message });
   }
 
-  const alerts = (data || []).map((a: any) => ({
+  interface AlertWithLoan {
+    id: string;
+    severity: string;
+    title: string;
+    message: string;
+    acknowledged: boolean;
+    created_at: string;
+    loans?: { name: string; borrowers?: { name: string } };
+  }
+  const alerts = ((data || []) as unknown as AlertWithLoan[]).map((a) => ({
     id: a.id,
     severity: a.severity,
     title: a.title,
@@ -497,7 +553,19 @@ async function getCovenantsInBreach(supabase: SupabaseClient, orgId: string): Pr
     return JSON.stringify({ error: error.message });
   }
 
-  const breaches = (data || []).map((t: any) => ({
+  interface TestWithCovenant {
+    calculated_value: number;
+    threshold_at_test: number;
+    headroom_percentage: number;
+    tested_at: string;
+    covenants?: {
+      name: string;
+      type: string;
+      operator: string;
+      loans?: { name: string; borrowers?: { name: string } };
+    };
+  }
+  const breaches = ((data || []) as unknown as TestWithCovenant[]).map((t) => ({
     borrower: t.covenants?.loans?.borrowers?.name || 'Unknown',
     loan: t.covenants?.loans?.name || 'Unknown',
     covenant: t.covenants?.name || 'Unknown',
@@ -566,7 +634,19 @@ async function getCovenantsAtWarning(supabase: SupabaseClient, orgId: string): P
     return JSON.stringify({ error: error.message });
   }
 
-  const warnings = (data || []).map((t: any) => ({
+  interface WarningTest {
+    calculated_value: number;
+    threshold_at_test: number;
+    headroom_percentage: number;
+    tested_at: string;
+    covenants?: {
+      name: string;
+      type: string;
+      operator: string;
+      loans?: { name: string; borrowers?: { name: string } };
+    };
+  }
+  const warnings = ((data || []) as unknown as WarningTest[]).map((t) => ({
     borrower: t.covenants?.loans?.borrowers?.name || 'Unknown',
     loan: t.covenants?.loans?.name || 'Unknown',
     covenant: t.covenants?.name || 'Unknown',
@@ -603,7 +683,7 @@ async function acknowledgeAlert(
 
   return JSON.stringify({
     success: true,
-    message: `Alert "${(data as any)?.title}" has been acknowledged.`
+    message: `Alert "${(data as { title?: string })?.title}" has been acknowledged.`
   });
 }
 
@@ -637,7 +717,13 @@ async function getUpcomingCovenantTests(
     return JSON.stringify({ error: error.message });
   }
 
-  const upcoming = (data || []).map((c: any) => ({
+  interface UpcomingCovenant {
+    name: string;
+    type: string;
+    test_due_date: string;
+    loans?: { name: string; borrowers?: { name: string } };
+  }
+  const upcoming = ((data || []) as unknown as UpcomingCovenant[]).map((c) => ({
     borrower: c.loans?.borrowers?.name || 'Unknown',
     loan: c.loans?.name || 'Unknown',
     covenant: c.name,
@@ -670,7 +756,15 @@ async function getDocumentsNeedingReview(supabase: SupabaseClient, orgId: string
     return JSON.stringify({ error: error.message });
   }
 
-  const documents = (data || []).map((d: any) => ({
+  interface DocumentWithLoan {
+    id: string;
+    name: string;
+    type: string;
+    extraction_status: string;
+    created_at: string;
+    loans?: { name: string; borrowers?: { name: string } };
+  }
+  const documents = ((data || []) as unknown as DocumentWithLoan[]).map((d) => ({
     id: d.id,
     name: d.name,
     type: d.type,

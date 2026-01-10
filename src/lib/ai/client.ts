@@ -254,7 +254,7 @@ export async function agentChat(
     content: userMessage,
   });
 
-  let totalUsage = { promptTokens: 0, completionTokens: 0 };
+  const totalUsage = { promptTokens: 0, completionTokens: 0 };
   let iterations = 0;
   const maxIterations = 5;
 
@@ -335,8 +335,7 @@ export async function simpleAgentChat(
   messages: ChatMessage[],
   context: string
 ): Promise<ChatResponse> {
-  // Add context to system message
-  const systemMessage = messages.find(m => m.role === 'system');
+  // Enhance system message with context
   const enhancedMessages = messages.map(m => {
     if (m.role === 'system') {
       return { ...m, content: m.content + '\n\n' + context };

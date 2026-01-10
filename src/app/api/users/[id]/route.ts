@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
-import { requirePermission, getAuthenticatedUser } from '@/lib/auth/api-auth';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { isValidRole, canAssignRole, Role } from '@/lib/auth/roles';
 
 // Get single user

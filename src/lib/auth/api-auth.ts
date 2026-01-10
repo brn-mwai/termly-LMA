@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
-import { errorResponse, asUserWithOrg } from '@/lib/utils/api';
+import { errorResponse } from '@/lib/utils/api';
 import { hasPermission, Permission, Role } from './roles';
 
 export interface AuthenticatedUser {

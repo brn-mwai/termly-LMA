@@ -54,16 +54,18 @@ function AlertItemSkeleton() {
   );
 }
 
-// Chart skeleton
+// Chart skeleton - using stable heights for consistent rendering
+const CHART_SKELETON_HEIGHTS = [45, 72, 58, 35, 80, 62, 48, 75, 55, 40, 68, 52];
+
 function ChartSkeleton({ height = 200 }: { height?: number }) {
   return (
     <div className="w-full" style={{ height }}>
       <div className="flex items-end justify-between h-full gap-2 px-4 pb-4">
-        {Array.from({ length: 12 }).map((_, i) => (
+        {CHART_SKELETON_HEIGHTS.map((h, i) => (
           <Skeleton
             key={i}
             className="flex-1"
-            style={{ height: `${Math.random() * 60 + 20}%` }}
+            style={{ height: `${h}%` }}
           />
         ))}
       </div>

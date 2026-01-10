@@ -8,6 +8,9 @@ interface ChartSkeletonProps {
   height?: number;
 }
 
+// Stable pre-computed heights for consistent rendering
+const BAR_HEIGHTS = [65, 82, 48, 95, 73, 58, 88, 42, 76, 55, 90, 68];
+
 export function ChartSkeleton({ title = true, height = 300 }: ChartSkeletonProps) {
   return (
     <Card>
@@ -24,11 +27,11 @@ export function ChartSkeleton({ title = true, height = 300 }: ChartSkeletonProps
       <CardContent>
         <div style={{ height }} className="flex items-end gap-2">
           {/* Simulate bar chart */}
-          {[...Array(12)].map((_, i) => (
+          {BAR_HEIGHTS.map((h, i) => (
             <Skeleton
               key={i}
               className="flex-1 rounded-t"
-              style={{ height: `${30 + Math.random() * 70}%` }}
+              style={{ height: `${h}%` }}
             />
           ))}
         </div>

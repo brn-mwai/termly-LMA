@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Development/sandbox folders
+    "open-in-v0/**",
   ]),
 ]);
 

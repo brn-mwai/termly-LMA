@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { House, MagnifyingGlass } from "@phosphor-icons/react";
 import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -92,22 +93,24 @@ export function DashboardHeader() {
             </BreadcrumbItem>
 
             {/* Only show breadcrumbs if not on dashboard */}
-            {pathname !== "/dashboard" && breadcrumbs.map((crumb, index) => (
-              <BreadcrumbItem key={crumb.href}>
+            {pathname !== "/dashboard" && breadcrumbs.map((crumb) => (
+              <React.Fragment key={crumb.href}>
                 <BreadcrumbSeparator />
-                {crumb.isLast ? (
-                  <BreadcrumbPage className="max-w-[150px] truncate">
-                    {crumb.title}
-                  </BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink
-                    href={crumb.href}
-                    className="max-w-[120px] truncate"
-                  >
-                    {crumb.title}
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
+                <BreadcrumbItem>
+                  {crumb.isLast ? (
+                    <BreadcrumbPage className="max-w-[150px] truncate">
+                      {crumb.title}
+                    </BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink
+                      href={crumb.href}
+                      className="max-w-[120px] truncate"
+                    >
+                      {crumb.title}
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </React.Fragment>
             ))}
           </BreadcrumbList>
         </Breadcrumb>

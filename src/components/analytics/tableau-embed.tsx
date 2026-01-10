@@ -85,7 +85,7 @@ export const TableauEmbed = forwardRef<TableauEmbedRef, TableauEmbedProps>(
           setLoading(false);
         });
 
-        viz.addEventListener('vizloaderror', (e: any) => {
+        viz.addEventListener('vizloaderror', (e: Event & { detail?: { message?: string } }) => {
           setError(e.detail?.message || 'Failed to load visualization');
           setLoading(false);
         });
@@ -164,7 +164,7 @@ export const TableauEmbed = forwardRef<TableauEmbedRef, TableauEmbedProps>(
           if (mounted) setLoading(false);
         });
 
-        viz.addEventListener('vizloaderror', (e: any) => {
+        viz.addEventListener('vizloaderror', (e: Event & { detail?: { message?: string } }) => {
           if (mounted) {
             setError(e.detail?.message || 'Failed to load visualization');
             setLoading(false);

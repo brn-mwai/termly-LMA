@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { format, subDays, subMonths } from "date-fns";
+import { format, subDays } from "date-fns";
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,8 +44,6 @@ export async function GET(request: NextRequest) {
       default:
         days = 30;
     }
-
-    const startDate = subDays(new Date(), days);
 
     // Get all loans with their creation dates and commitment amounts
     const { data: loansData } = await supabase

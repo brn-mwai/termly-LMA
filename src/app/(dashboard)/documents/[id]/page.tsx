@@ -9,18 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ArrowLeft,
-  FileText,
   MagicWand,
   CheckCircle,
   Clock,
   WarningCircle,
   CircleNotch,
-  DownloadSimple,
   ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { formatDate } from '@/lib/utils/format';
 
-const statusConfig: Record<string, { icon: any; label: string; className: string }> = {
+const statusConfig: Record<string, { icon: React.ElementType; label: string; className: string }> = {
   pending: { icon: Clock, label: 'Pending', className: 'bg-gray-100 text-gray-800' },
   processing: { icon: CircleNotch, label: 'Processing', className: 'bg-blue-100 text-blue-800' },
   completed: { icon: CheckCircle, label: 'Extracted', className: 'bg-green-100 text-green-800' },
@@ -28,10 +26,58 @@ const statusConfig: Record<string, { icon: any; label: string; className: string
   needs_review: { icon: WarningCircle, label: 'Needs Review', className: 'bg-yellow-100 text-yellow-800' },
 };
 
+interface EbitdaAddback {
+  category: string;
+  description: string;
+  cap?: string;
+}
+
+interface ExtractionCovenant {
+  name: string;
+  type: string;
+  threshold: number;
+  testing_frequency: string;
+  operator?: string;
+  category?: string;
+}
+
+interface FinancialPeriod {
+  period: string;
+  metrics?: Record<string, string | number>;
+}
+
+interface ExtractionData {
+  covenants?: ExtractionCovenant[];
+  financials?: Record<string, unknown>;
+  financialData?: FinancialPeriod[];
+  dates?: Record<string, unknown>;
+  ebitdaDefinition?: string;
+  ebitdaAddbacks?: EbitdaAddback[];
+  overallConfidence?: number;
+}
+
+interface DocumentData {
+  id: string;
+  name: string;
+  type: string;
+  extraction_status: string;
+  file_path: string;
+  content_type: string;
+  file_size: number;
+  created_at: string;
+  loans?: { name: string; id: string; borrowers?: { name: string } };
+  extracted_data?: ExtractionData;
+  confidence_scores?: {
+    overall: number;
+    covenants?: number;
+    financials?: number;
+  };
+}
+
 export default function DocumentDetailPage() {
   const { id } = useParams();
-  const router = useRouter();
-  const [document, setDocument] = useState<any>(null);
+  useRouter(); // Required for navigation context
+  const [document, setDocument] = useState<DocumentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [extracting, setExtracting] = useState(false);
 
@@ -257,7 +303,7 @@ export default function DocumentDetailPage() {
                       <div>
                         <h4 className="font-medium mb-2">Permitted Add-backs</h4>
                         <ul className="space-y-2">
-                          {extraction.ebitdaAddbacks.map((addback: any, index: number) => (
+                          {extraction.ebitdaAddbacks.map((addback, index) => (
                             <li key={index} className="flex items-start gap-2 text-sm">
                               <Badge variant="outline" className="mt-0.5">{addback.category}</Badge>
                               <div>

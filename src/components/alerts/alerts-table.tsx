@@ -27,7 +27,7 @@ import {
 } from '@phosphor-icons/react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import { staggerContainer, staggerItem } from '@/lib/animations';
+import { staggerItem } from '@/lib/animations';
 
 interface Alert {
   id: string;
@@ -129,7 +129,7 @@ export function AlertsTable({ alerts: initialAlerts }: AlertsTableProps) {
 
       toast.success('Alert acknowledged');
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Failed to acknowledge alert');
     } finally {
       setLoading(null);
@@ -159,7 +159,7 @@ export function AlertsTable({ alerts: initialAlerts }: AlertsTableProps) {
       toast.success(`${selectedIds.size} alert${selectedIds.size > 1 ? 's' : ''} acknowledged`);
       setSelectedIds(new Set());
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error('Failed to acknowledge alerts');
     } finally {
       setBulkLoading(false);

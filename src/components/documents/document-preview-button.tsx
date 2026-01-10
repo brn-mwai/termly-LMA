@@ -15,13 +15,11 @@ import { toast } from "sonner";
 interface DocumentPreviewButtonProps {
   documentId: string;
   documentName: string;
-  filePath: string;
 }
 
 export function DocumentPreviewButton({
   documentId,
   documentName,
-  filePath,
 }: DocumentPreviewButtonProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);

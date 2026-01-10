@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -15,26 +16,32 @@ import { TableauEmbed, TableauEmbedRef } from '@/components/analytics/tableau-em
 import { DashboardSelector } from '@/components/analytics/dashboard-selector';
 import { RefreshButton } from '@/components/analytics/refresh-button';
 import { DASHBOARDS, DashboardKey } from '@/lib/tableau/config';
-import { Badge } from '@/components/ui/badge';
 import { Info } from '@phosphor-icons/react';
+
+interface LoanOption {
+  id: string;
+  name: string;
+  borrowers?: { name: string };
+}
 
 export default function AnalyticsPage() {
   const [activeDashboard, setActiveDashboard] = useState<DashboardKey>('portfolioOverview');
   const [loanId, setLoanId] = useState<string>('');
-  const [loans, setLoans] = useState<any[]>([]);
-  const [loansLoading, setLoansLoading] = useState(true);
+  const [loans, setLoans] = useState<LoanOption[]>([]);
   const tableauRef = useRef<TableauEmbedRef>(null);
 
   const dashboard = DASHBOARDS[activeDashboard];
 
   useEffect(() => {
     // Fetch loans for the loan selector
-    setLoansLoading(true);
-    fetch('/api/loans?limit=50')
+    const controller = new AbortController();
+    fetch('/api/loans?limit=50', { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => setLoans(data.data || []))
-      .catch(() => setLoans([]))
-      .finally(() => setLoansLoading(false));
+      .catch(() => {
+        // Ignore abort errors
+      });
+    return () => controller.abort();
   }, []);
 
   // Handle refresh button click
@@ -73,7 +80,7 @@ export default function AnalyticsPage() {
               <SelectValue placeholder="Choose a loan..." />
             </SelectTrigger>
             <SelectContent>
-              {loans.map((loan: any) => (
+              {loans.map((loan) => (
                 <SelectItem key={loan.id} value={loan.id}>
                   {loan.borrowers?.name || 'Unknown'} - {loan.name}
                 </SelectItem>

@@ -21,7 +21,6 @@ import {
   Warning,
   Upload,
   ClockCounterClockwise,
-  Eye,
 } from "@phosphor-icons/react/dist/ssr";
 import { RunCovenantTestButton } from "@/components/loans/run-covenant-test-button";
 import { CovenantEditDialog } from "@/components/loans/covenant-edit-dialog";
@@ -226,10 +225,64 @@ export default async function LoanDetailPage({
 
   const { loan, covenants, financials, documents, auditLogs } = data;
 
+  // Compute remaining months (calculated once per request)
+  const maturityDate = new Date(loan.maturity_date);
+  const monthsRemaining = Math.max(0, Math.ceil(
+    (maturityDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30)
+  ));
+
+  interface CovenantTest {
+    id: string;
+    calculated_value: number;
+    threshold_at_test: number;
+    status: string;
+    headroom_percentage: number;
+    tested_at: string;
+  }
+
+  interface CovenantData {
+    id: string;
+    name: string;
+    type: string;
+    operator: string;
+    threshold: number;
+    testing_frequency: string;
+    covenant_tests?: CovenantTest[];
+  }
+
+  interface FinancialPeriod {
+    id: string;
+    period_end_date: string;
+    revenue?: number;
+    ebitda_reported?: number;
+    ebitda_adjusted?: number;
+    total_debt?: number;
+    interest_expense?: number;
+  }
+
+  interface LoanDocument {
+    id: string;
+    name: string;
+    type: string;
+    extraction_status: string;
+    created_at: string;
+  }
+
+  interface AuditLog {
+    id: string;
+    action: string;
+    entity_type: string;
+    created_at: string;
+  }
+
+  const typedFinancials = financials as FinancialPeriod[];
+  const typedDocuments = documents as LoanDocument[];
+  const typedAuditLogs = auditLogs as AuditLog[];
+
   // Get latest test for each covenant
-  const covenantsWithLatestTest = covenants.map((covenant: any) => {
+  const covenantsWithLatestTest = (covenants as CovenantData[]).map((covenant) => {
     const tests = covenant.covenant_tests || [];
-    const latestTest = tests.sort((a: any, b: any) =>
+    const latestTest = [...tests].sort((a, b) =>
       new Date(b.tested_at).getTime() - new Date(a.tested_at).getTime()
     )[0];
     return {
@@ -325,11 +378,7 @@ export default async function LoanDetailPage({
               })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.max(0, Math.ceil(
-                (new Date(loan.maturity_date).getTime() - Date.now()) /
-                  (1000 * 60 * 60 * 24 * 30)
-              ))}{" "}
-              months remaining
+              {monthsRemaining} months remaining
             </p>
           </CardContent>
         </Card>
@@ -384,7 +433,7 @@ export default async function LoanDetailPage({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {covenantsWithLatestTest.map((covenant: any) => (
+                    {covenantsWithLatestTest.map((covenant) => (
                       <TableRow key={covenant.id}>
                         <TableCell className="font-medium">
                           {covenant.name}
@@ -433,7 +482,7 @@ export default async function LoanDetailPage({
               <AddFinancialPeriodDialog loanId={id} />
             </CardHeader>
             <CardContent>
-              {financials.length === 0 ? (
+              {typedFinancials.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <TrendUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No financial data available</p>
@@ -452,7 +501,7 @@ export default async function LoanDetailPage({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {financials.map((period: any) => (
+                    {typedFinancials.map((period) => (
                       <TableRow key={period.id}>
                         <TableCell className="font-medium">
                           {new Date(period.period_end_date).toLocaleDateString("en-US", {
@@ -503,7 +552,7 @@ export default async function LoanDetailPage({
               </Button>
             </CardHeader>
             <CardContent>
-              {documents.length === 0 ? (
+              {typedDocuments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No documents uploaded</p>
@@ -511,7 +560,7 @@ export default async function LoanDetailPage({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {documents.map((doc: any) => (
+                  {typedDocuments.map((doc) => (
                     <div
                       key={doc.id}
                       className="flex items-center justify-between p-4 rounded-lg border"
@@ -535,7 +584,6 @@ export default async function LoanDetailPage({
                         <DocumentPreviewButton
                           documentId={doc.id}
                           documentName={doc.name}
-                          filePath={doc.file_path}
                         />
                       </div>
                     </div>
@@ -553,14 +601,14 @@ export default async function LoanDetailPage({
               <CardTitle>Audit Trail</CardTitle>
             </CardHeader>
             <CardContent>
-              {auditLogs.length === 0 ? (
+              {typedAuditLogs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <ClockCounterClockwise className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No audit history available</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {auditLogs.map((log: any) => (
+                  {typedAuditLogs.map((log) => (
                     <div
                       key={log.id}
                       className="flex items-start gap-4 p-4 rounded-lg border"

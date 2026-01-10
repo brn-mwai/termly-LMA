@@ -25,7 +25,6 @@ import {
   Envelope,
   Globe,
   CircleNotch,
-  CheckCircle,
   Gear,
 } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
@@ -45,19 +44,6 @@ interface UserPreferences {
     timezone: string;
   };
 }
-
-const defaultPreferences: UserPreferences = {
-  notifications: {
-    emailAlerts: true,
-    criticalOnly: false,
-    weeklyDigest: true,
-  },
-  regional: {
-    dateFormat: "MM/DD/YYYY",
-    currency: "USD",
-    timezone: "America/New_York",
-  },
-};
 
 export default function SettingsPage() {
   const { user, isLoaded } = useUser();

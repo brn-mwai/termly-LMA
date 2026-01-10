@@ -31,7 +31,13 @@
       "Bash(npx vercel:*)",
       "Bash(wc:*)",
       "Bash(git -C \"C:\\\\Users\\\\Windows\\\\OneDrive\\\\Documents\\\\termly\\\\termly\" log --oneline --graph -20)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(ss:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(tee:*)"
     ]
   }
 }

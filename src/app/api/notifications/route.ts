@@ -9,8 +9,6 @@ export async function GET() {
     const user = await getAuthenticatedUser();
     if (!user) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
-
     // Get user's notification preferences from user metadata or a settings table
     // For now, return default preferences
     const preferences = {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -9,8 +10,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MagnifyingGlass } from "@phosphor-icons/react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Client-side hydration check using useSyncExternalStore
+const emptySubscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export function LoansFilters() {
+  const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot);
+
   return (
     <div className="flex flex-col sm:flex-row gap-3">
       <div className="relative flex-1">
@@ -18,29 +27,38 @@ export function LoansFilters() {
         <Input placeholder="Search loans or borrowers..." className="pl-9 h-9" />
       </div>
       <div className="flex gap-2">
-        <Select defaultValue="all">
-          <SelectTrigger className="w-[130px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select defaultValue="all">
-          <SelectTrigger className="w-[130px] h-9">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="term_loan">Term Loan</SelectItem>
-            <SelectItem value="revolver">Revolver</SelectItem>
-            <SelectItem value="term_loan_b">Term Loan B</SelectItem>
-            <SelectItem value="delayed_draw">Delayed Draw</SelectItem>
-            <SelectItem value="bridge">Bridge</SelectItem>
-          </SelectContent>
-        </Select>
+        {mounted ? (
+          <>
+            <Select defaultValue="all">
+              <SelectTrigger className="w-[130px] h-9">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select defaultValue="all">
+              <SelectTrigger className="w-[130px] h-9">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="term_loan">Term Loan</SelectItem>
+                <SelectItem value="revolver">Revolver</SelectItem>
+                <SelectItem value="term_loan_b">Term Loan B</SelectItem>
+                <SelectItem value="delayed_draw">Delayed Draw</SelectItem>
+                <SelectItem value="bridge">Bridge</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        ) : (
+          <>
+            <Skeleton className="w-[130px] h-9" />
+            <Skeleton className="w-[130px] h-9" />
+          </>
+        )}
       </div>
     </div>
   );

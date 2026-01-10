@@ -37,7 +37,7 @@ export function DocumentExtractionPreview() {
       setActiveDoc((prev) => (prev + 1) % docs.length);
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [docs.length]);
 
   return (
     <div style={{

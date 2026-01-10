@@ -7,6 +7,20 @@ interface TableauSession {
   userId: string;
 }
 
+interface TableauWorkbook {
+  id: string;
+  name: string;
+  contentUrl: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface TableauView {
+  id: string;
+  name: string;
+  contentUrl: string;
+}
+
 export class TableauRestAPI {
   private session: TableauSession | null = null;
 
@@ -42,7 +56,7 @@ export class TableauRestAPI {
     return this.session;
   }
 
-  async getWorkbooks(): Promise<any[]> {
+  async getWorkbooks(): Promise<TableauWorkbook[]> {
     if (!this.session) throw new Error('Not authenticated');
 
     const response = await fetch(
@@ -60,7 +74,7 @@ export class TableauRestAPI {
     return data.workbooks?.workbook || [];
   }
 
-  async getViews(workbookId: string): Promise<any[]> {
+  async getViews(workbookId: string): Promise<TableauView[]> {
     if (!this.session) throw new Error('Not authenticated');
 
     const response = await fetch(

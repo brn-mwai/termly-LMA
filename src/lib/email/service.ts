@@ -1,8 +1,6 @@
 // Email Service for Termly Notifications
 // Supports multiple providers: Resend (recommended), SendGrid, or console logging for development
 
-import { createClient } from '@/lib/supabase/server';
-
 export interface EmailOptions {
   to: string | string[];
   subject: string;

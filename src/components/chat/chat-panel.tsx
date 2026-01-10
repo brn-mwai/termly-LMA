@@ -45,6 +45,23 @@ interface SpeechRecognitionAlternative {
   confidence: number;
 }
 
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
 export function ChatPanel() {
   const { isOpen, closeChat, openChat } = useChat();
   const { setOpen: setSidebarOpen } = useSidebar();
@@ -58,7 +75,7 @@ export function ChatPanel() {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const [chatMode, setChatMode] = useState<'full' | 'limited' | null>(null);
 
 
@@ -167,7 +184,8 @@ export function ChatPanel() {
 
   function startRecording() {
     // Check for browser support
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
@@ -205,7 +223,7 @@ export function ChatPanel() {
       }
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error);
       setIsRecording(false);
       setInterimTranscript('');
