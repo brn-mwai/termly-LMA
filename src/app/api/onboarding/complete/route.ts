@@ -16,11 +16,13 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Get user's organization and full details
-    let { data: userData, error: userError } = await supabase
+    const { data: existingUser, error: userError } = await supabase
       .from('users')
       .select('id, email, full_name, organization_id')
       .eq('clerk_id', userId)
       .single();
+
+    let userData = existingUser as { id: string; email: string; full_name: string | null; organization_id: string } | null;
 
     // If user doesn't exist, create them (fallback for failed webhook)
     if (userError || !userData) {
@@ -81,11 +83,15 @@ export async function POST(request: Request) {
         return errorResponse('USER_CREATE_FAILED', 'Failed to create user', 500);
       }
 
-      userData = newUser;
+      userData = newUser as { id: string; email: string; full_name: string | null; organization_id: string };
       console.log(`User created via onboarding fallback: ${userId}`);
     }
 
-    const user = userData as { id: string; email: string; full_name: string | null; organization_id: string };
+    if (!userData) {
+      return errorResponse('NOT_FOUND', 'User not found', 404);
+    }
+
+    const user = userData;
 
     // Get organization name
     const { data: orgData } = await supabase
