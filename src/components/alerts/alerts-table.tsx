@@ -212,7 +212,7 @@ export function AlertsTable({ alerts: initialAlerts }: AlertsTableProps) {
         )}
       </AnimatePresence>
 
-      <CardContent className="p-0">
+      <CardContent className="px-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -242,7 +242,7 @@ export function AlertsTable({ alerts: initialAlerts }: AlertsTableProps) {
                   animate="animate"
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ delay: index * 0.02 }}
-                  className="border-b last:border-0"
+                  className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors last:border-0"
                 >
                   <TableCell>
                     <Checkbox

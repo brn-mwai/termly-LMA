@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Chat, X, CircleNotch, Paperclip, Microphone, MicrophoneSlash, ArrowUp, File } from '@phosphor-icons/react';
+import { useState, useRef, useEffect } from 'react';
+import { X, CircleNotch, Paperclip, Microphone, MicrophoneSlash, ArrowUp, File, Info, Lightning } from '@phosphor-icons/react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import type { DotLottie } from '@lottiefiles/dotlottie-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { useChat } from './chat-context';
@@ -60,55 +59,8 @@ export function ChatPanel() {
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
   const recognitionRef = useRef<any>(null);
+  const [chatMode, setChatMode] = useState<'full' | 'limited' | null>(null);
 
-  // Monty Lottie animation with state machine
-  const dotLottieRef = useRef<DotLottie | null>(null);
-  const peekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Fire peekEvent to trigger the peek animation
-  const triggerPeek = useCallback(() => {
-    if (dotLottieRef.current) {
-      try {
-        // Fire the peekEvent trigger in state machine
-        (dotLottieRef.current as any).stateMachineFireTrigger?.('peekEvent');
-      } catch (e) {
-        console.log('State machine trigger failed:', e);
-      }
-    }
-  }, []);
-
-  // Schedule random peek animations when chat is closed
-  const schedulePeek = useCallback(() => {
-    // Random delay between 8-15 seconds
-    const delay = 8000 + Math.random() * 7000;
-
-    peekTimeoutRef.current = setTimeout(() => {
-      if (!isOpen) {
-        triggerPeek();
-      }
-      schedulePeek();
-    }, delay);
-  }, [isOpen, triggerPeek]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      // Start scheduling peeks after initial delay
-      const initialDelay = setTimeout(() => {
-        schedulePeek();
-      }, 5000);
-
-      return () => {
-        clearTimeout(initialDelay);
-        if (peekTimeoutRef.current) {
-          clearTimeout(peekTimeoutRef.current);
-        }
-      };
-    } else {
-      if (peekTimeoutRef.current) {
-        clearTimeout(peekTimeoutRef.current);
-      }
-    }
-  }, [isOpen, schedulePeek]);
 
   useEffect(() => {
     if (isOpen) {
@@ -158,6 +110,10 @@ export function ChatPanel() {
 
       const { data } = await res.json();
       setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+      // Track chat mode for UI indicator
+      if (data.mode) {
+        setChatMode(data.mode);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -182,6 +138,7 @@ export function ChatPanel() {
 
   function clearChat() {
     setMessages([]);
+    setChatMode(null);
   }
 
   // File attachment handler
@@ -296,10 +253,7 @@ export function ChatPanel() {
         <DotLottieReact
           src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
           autoplay
-          stateMachineId="StateMachine1"
-          dotLottieRefCallback={(ref) => {
-            dotLottieRef.current = ref;
-          }}
+          loop
           className="w-full h-full"
         />
       </button>
@@ -315,7 +269,7 @@ export function ChatPanel() {
             <DotLottieReact
               src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
               autoplay
-              stateMachineId="StateMachine1"
+              loop
               className="w-full h-full scale-110"
             />
           </div>
@@ -325,6 +279,25 @@ export function ChatPanel() {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Mode indicator */}
+          {chatMode && (
+            <div
+              className={cn(
+                "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs",
+                chatMode === 'full'
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+              )}
+              title={chatMode === 'full' ? 'Full access to database' : 'Limited mode - cached data only'}
+            >
+              {chatMode === 'full' ? (
+                <Lightning className="h-3 w-3" weight="fill" />
+              ) : (
+                <Info className="h-3 w-3" />
+              )}
+              {chatMode === 'full' ? 'Live' : 'Limited'}
+            </div>
+          )}
           {messages.length > 0 && (
             <Button
               variant="ghost"
@@ -354,7 +327,7 @@ export function ChatPanel() {
               <DotLottieReact
                 src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
                 autoplay
-                stateMachineId="StateMachine1"
+                loop
                 className="w-full h-full scale-110"
               />
             </div>

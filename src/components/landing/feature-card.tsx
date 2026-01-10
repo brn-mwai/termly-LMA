@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import styles from './landing.module.css';
 
 export interface FeatureCardProps {
@@ -393,6 +394,98 @@ export function AuditTrailPreview() {
         fontWeight: 500
       }}>
         Full compliance history
+      </div>
+    </div>
+  );
+}
+
+export function MontyAssistantPreview() {
+  const [messages] = useState([
+    { role: 'user', text: 'Which loans are in breach?' },
+    { role: 'assistant', text: '2 loans need attention: Acme Corp and TechStart have leverage ratio breaches.' },
+  ]);
+
+  return (
+    <div style={{
+      background: 'var(--white)',
+      border: '1px solid var(--gray-200)',
+      borderRadius: '12px',
+      padding: '1rem',
+      width: '300px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.75rem'
+    }}>
+      {/* Header with Monty */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        paddingBottom: '0.75rem',
+        borderBottom: '1px solid var(--gray-100)'
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          flexShrink: 0
+        }}>
+          <DotLottieReact
+            src="https://lottie.host/4b389c28-a4ce-45a2-874f-ad136a763d03/0r03GIKCXg.lottie"
+            autoplay
+            loop
+            style={{ width: '100%', height: '100%', transform: 'scale(1.1)' }}
+          />
+        </div>
+        <div>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--gray-900)', display: 'block' }}>
+            Monty
+          </span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>
+            Your covenant assistant
+          </span>
+        </div>
+      </div>
+
+      {/* Chat messages */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
+            }}
+          >
+            <div style={{
+              maxWidth: '85%',
+              padding: '0.625rem 0.875rem',
+              borderRadius: msg.role === 'user' ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+              background: msg.role === 'user' ? 'var(--primary-500)' : 'var(--gray-100)',
+              color: msg.role === 'user' ? 'white' : 'var(--gray-700)',
+              fontSize: '0.8125rem',
+              lineHeight: 1.4
+            }}>
+              {msg.text}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Input hint */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        padding: '0.5rem 0.75rem',
+        background: 'var(--gray-50)',
+        borderRadius: '8px',
+        fontSize: '0.75rem',
+        color: 'var(--gray-400)'
+      }}>
+        <i className="ph ph-chat-dots" style={{ fontSize: '0.875rem' }}></i>
+        Ask about your portfolio...
       </div>
     </div>
   );

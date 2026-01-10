@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,12 +29,45 @@ import {
   Gear,
 } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
+
+const PREFERENCES_KEY = "termly_user_preferences";
+
+interface UserPreferences {
+  notifications: {
+    emailAlerts: boolean;
+    criticalOnly: boolean;
+    weeklyDigest: boolean;
+  };
+  regional: {
+    dateFormat: string;
+    currency: string;
+    timezone: string;
+  };
+}
+
+const defaultPreferences: UserPreferences = {
+  notifications: {
+    emailAlerts: true,
+    criticalOnly: false,
+    weeklyDigest: true,
+  },
+  regional: {
+    dateFormat: "MM/DD/YYYY",
+    currency: "USD",
+    timezone: "America/New_York",
+  },
+};
 
 export default function SettingsPage() {
   const { user, isLoaded } = useUser();
   const { theme, setTheme } = useTheme();
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Organization settings
+  const [orgName, setOrgName] = useState("");
+  const [orgDomain, setOrgDomain] = useState("");
 
   // Notification settings
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -46,16 +79,87 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState("USD");
   const [timezone, setTimezone] = useState("America/New_York");
 
+  // Load settings on mount
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        // Load organization settings from API
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+          const { data } = await res.json();
+          if (data?.organization) {
+            setOrgName(data.organization.name || "");
+            setOrgDomain(data.organization.domain || "");
+          }
+        }
+
+        // Load user preferences from localStorage
+        const stored = localStorage.getItem(PREFERENCES_KEY);
+        if (stored) {
+          const prefs: UserPreferences = JSON.parse(stored);
+          setEmailAlerts(prefs.notifications.emailAlerts);
+          setCriticalOnly(prefs.notifications.criticalOnly);
+          setWeeklyDigest(prefs.notifications.weeklyDigest);
+          setDateFormat(prefs.regional.dateFormat);
+          setCurrency(prefs.regional.currency);
+          setTimezone(prefs.regional.timezone);
+        }
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (isLoaded) {
+      loadSettings();
+    }
+  }, [isLoaded]);
+
   const handleSave = async () => {
     setSaving(true);
-    // Simulate save - in production, this would call an API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      // Save organization settings to API
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organization: {
+            name: orgName,
+            domain: orgDomain,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save organization settings");
+      }
+
+      // Save user preferences to localStorage
+      const preferences: UserPreferences = {
+        notifications: {
+          emailAlerts,
+          criticalOnly,
+          weeklyDigest,
+        },
+        regional: {
+          dateFormat,
+          currency,
+          timezone,
+        },
+      };
+      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+
+      toast.success("Settings saved successfully");
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!isLoaded) {
+  if (!isLoaded || loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <CircleNotch className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -67,7 +171,7 @@ export default function SettingsPage() {
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-medium tracking-tight">
+        <h1 className="text-3xl font-normal tracking-tight">
           Settings
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -134,7 +238,8 @@ export default function SettingsPage() {
               <Input
                 id="org-name"
                 placeholder="Enter organization name"
-                defaultValue="Termly Finance"
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -142,7 +247,8 @@ export default function SettingsPage() {
               <Input
                 id="org-domain"
                 placeholder="company.com"
-                defaultValue="termly.cc"
+                value={orgDomain}
+                onChange={(e) => setOrgDomain(e.target.value)}
               />
             </div>
           </div>
@@ -192,6 +298,38 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch checked={weeklyDigest} onCheckedChange={setWeeklyDigest} />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Test Email Notifications</Label>
+              <p className="text-sm text-muted-foreground">
+                Send a test email to verify your notification setup
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/notifications", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: "test" }),
+                  });
+                  const data = await res.json();
+                  if (data.data?.success) {
+                    toast.success("Test email sent! Check your inbox.");
+                  } else {
+                    toast.error(data.data?.error || "Failed to send test email");
+                  }
+                } catch {
+                  toast.error("Failed to send test email");
+                }
+              }}
+            >
+              Send Test Email
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -329,12 +467,6 @@ export default function SettingsPage() {
 
       {/* Save Button */}
       <div className="flex justify-end gap-4">
-        {saved && (
-          <div className="flex items-center gap-2 text-green-600">
-            <CheckCircle className="h-5 w-5" />
-            Settings saved
-          </div>
-        )}
         <Button onClick={handleSave} disabled={saving}>
           {saving ? (
             <>

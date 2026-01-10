@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight">
+          <h1 className="text-3xl font-normal tracking-tight">
             Analytics
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -66,53 +66,36 @@ export default function AnalyticsPage() {
 
       {/* Loan ID selector for Loan Detail dashboard */}
       {activeDashboard === 'loanDetail' && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Select Loan</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-end">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="loan">Choose a loan to analyze</Label>
-                <Select value={loanId} onValueChange={setLoanId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a loan from your portfolio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {loans.map((loan: any) => (
-                      <SelectItem key={loan.id} value={loan.id}>
-                        {loan.borrowers?.name || 'Unknown'} - {loan.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <span className="text-sm text-muted-foreground">or</span>
-              <div className="space-y-2">
-                <Label htmlFor="loan_id">Enter Loan ID</Label>
-                <Input
-                  id="loan_id"
-                  placeholder="Enter loan ID..."
-                  value={loanId}
-                  onChange={(e) => setLoanId(e.target.value)}
-                  className="w-48"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-lg border bg-muted/30">
+          <Label className="text-sm font-medium whitespace-nowrap">Select Loan:</Label>
+          <Select value={loanId} onValueChange={setLoanId}>
+            <SelectTrigger className="flex-1 sm:max-w-[300px] h-9">
+              <SelectValue placeholder="Choose a loan..." />
+            </SelectTrigger>
+            <SelectContent>
+              {loans.map((loan: any) => (
+                <SelectItem key={loan.id} value={loan.id}>
+                  {loan.borrowers?.name || 'Unknown'} - {loan.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground hidden sm:block">or</span>
+          <Input
+            placeholder="Enter loan ID..."
+            value={loanId}
+            onChange={(e) => setLoanId(e.target.value)}
+            className="w-full sm:w-40 h-9"
+          />
+        </div>
       )}
 
       {/* Dashboard Description */}
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="flex items-center gap-3 py-4">
-          <Info className="h-5 w-5 text-primary" />
-          <div>
-            <span className="font-semibold">{dashboard.name}:</span>{' '}
-            <span className="text-muted-foreground">{dashboard.description}</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/5 border border-primary/20 text-sm">
+        <Info className="h-4 w-4 text-primary shrink-0" />
+        <span className="font-medium">{dashboard.name}:</span>
+        <span className="text-muted-foreground">{dashboard.description}</span>
+      </div>
 
       {/* Tableau Dashboard */}
       <Card className="overflow-hidden">

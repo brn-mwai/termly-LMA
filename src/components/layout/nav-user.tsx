@@ -43,10 +43,10 @@ export function NavUser() {
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" className="animate-pulse">
-            <div className="h-8 w-8 rounded-lg bg-sidebar-accent" />
+            <span className="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-sidebar-accent" />
             <div className="grid flex-1 gap-1">
-              <div className="h-4 w-24 rounded bg-sidebar-accent" />
-              <div className="h-3 w-32 rounded bg-sidebar-accent" />
+              <span className="h-4 w-24 rounded bg-sidebar-accent block" />
+              <span className="h-3 w-32 rounded bg-sidebar-accent block" />
             </div>
           </SidebarMenuButton>
         </SidebarMenuItem>

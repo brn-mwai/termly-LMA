@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import { Plus, Eye, FileText, Buildings } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
 import { LoansFilters } from "@/components/loans/loans-filters";
+import { LoansTableSkeleton } from "@/components/loans/loans-table-skeleton";
 
 interface LoanWithRelations {
   id: string;
@@ -33,7 +35,6 @@ interface LoanWithRelations {
     id: string;
     name: string;
   }>;
-  // Calculated field for compliance status based on latest covenant tests
   complianceStatus?: "compliant" | "warning" | "breach";
 }
 
@@ -43,7 +44,6 @@ async function getLoans() {
 
   const supabase = await createClient();
 
-  // Get user's organization
   const userResult = await supabase
     .from("users")
     .select("organization_id")
@@ -117,15 +117,115 @@ function getStatusBadge(status: string) {
   );
 }
 
-export default async function LoansPage() {
+async function LoansTable() {
   const loans = await getLoans();
 
+  if (loans.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Buildings className="h-5 w-5" />
+            Portfolio (0 loans)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <Buildings className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No loans yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Get started by adding your first loan to the portfolio.
+            </p>
+            <Button asChild>
+              <Link href="/loans/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Loan
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Buildings className="h-5 w-5" />
+          Portfolio ({loans.length} loan{loans.length !== 1 ? 's' : ''})
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Borrower / Loan</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-right">Commitment</TableHead>
+              <TableHead className="text-right">Outstanding</TableHead>
+              <TableHead>Covenants</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Maturity</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loans.map((loan) => (
+              <TableRow key={loan.id}>
+                <TableCell>
+                  <div>
+                    <div className="font-medium">{loan.borrowers?.name || "Unknown"}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {loan.name}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">{loan.facility_type}</Badge>
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(loan.commitment_amount)}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(loan.outstanding_amount)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    {loan.covenants?.length || 0}
+                  </div>
+                </TableCell>
+                <TableCell>{getStatusBadge(loan.status)}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {new Date(loan.maturity_date).toLocaleDateString("en-US", {
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link href={`/loans/${loan.id}`}>
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function LoansPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight">Loans</h1>
+          <h1 className="text-3xl font-normal tracking-tight">Loans</h1>
           <p className="text-sm text-muted-foreground">
             Manage and monitor your loan portfolio
           </p>
@@ -141,90 +241,10 @@ export default async function LoansPage() {
       {/* Filters */}
       <LoansFilters />
 
-      {/* Loans Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Buildings className="h-5 w-5" />
-            Portfolio ({loans.length} loan{loans.length !== 1 ? 's' : ''})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loans.length === 0 ? (
-            <div className="text-center py-12">
-              <Buildings className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No loans yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Get started by adding your first loan to the portfolio.
-              </p>
-              <Button asChild>
-                <Link href="/loans/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Loan
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Borrower / Loan</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Commitment</TableHead>
-                  <TableHead className="text-right">Outstanding</TableHead>
-                  <TableHead>Covenants</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Maturity</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loans.map((loan) => (
-                  <TableRow key={loan.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{loan.borrowers?.name || "Unknown"}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {loan.name}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{loan.facility_type}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(loan.commitment_amount)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(loan.outstanding_amount)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        {loan.covenants?.length || 0}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(loan.status)}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(loan.maturity_date).toLocaleDateString("en-US", {
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/loans/${loan.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Loans Table with Suspense */}
+      <Suspense fallback={<LoansTableSkeleton />}>
+        <LoansTable />
+      </Suspense>
     </div>
   );
 }

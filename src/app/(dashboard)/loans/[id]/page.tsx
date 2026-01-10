@@ -21,8 +21,13 @@ import {
   Warning,
   Upload,
   ClockCounterClockwise,
+  Eye,
 } from "@phosphor-icons/react/dist/ssr";
 import { RunCovenantTestButton } from "@/components/loans/run-covenant-test-button";
+import { CovenantEditDialog } from "@/components/loans/covenant-edit-dialog";
+import { AddCovenantDialog } from "@/components/loans/add-covenant-dialog";
+import { AddFinancialPeriodDialog } from "@/components/loans/add-financial-period-dialog";
+import { DocumentPreviewButton } from "@/components/documents/document-preview-button";
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
 
@@ -169,7 +174,7 @@ function getHeadroomIndicator(headroom: number) {
       ) : (
         <TrendDown className="h-4 w-4" />
       )}
-      {headroom.toFixed(1)}%
+      <span className="font-mono">{headroom.toFixed(1)}%</span>
     </div>
   );
 }
@@ -243,7 +248,7 @@ export default async function LoanDetailPage({
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-medium tracking-tight">
+          <h1 className="text-3xl font-normal tracking-tight">
             {loan.borrowers?.name || "Unknown Borrower"}
           </h1>
           <p className="text-muted-foreground">{loan.name}</p>
@@ -354,8 +359,9 @@ export default async function LoanDetailPage({
         {/* Covenants Tab */}
         <TabsContent value="covenants">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Covenant Status</CardTitle>
+              <AddCovenantDialog loanId={id} />
             </CardHeader>
             <CardContent>
               {covenantsWithLatestTest.length === 0 ? (
@@ -374,6 +380,7 @@ export default async function LoanDetailPage({
                       <TableHead className="text-right">Headroom</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Last Test</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -406,6 +413,9 @@ export default async function LoanDetailPage({
                             ? new Date(covenant.latestTest.tested_at).toLocaleDateString()
                             : "Never tested"}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <CovenantEditDialog covenant={covenant} loanId={id} />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -418,8 +428,9 @@ export default async function LoanDetailPage({
         {/* Financials Tab */}
         <TabsContent value="financials">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Financial History</CardTitle>
+              <AddFinancialPeriodDialog loanId={id} />
             </CardHeader>
             <CardContent>
               {financials.length === 0 ? (
@@ -519,7 +530,14 @@ export default async function LoanDetailPage({
                           </p>
                         </div>
                       </div>
-                      {getExtractionBadge(doc.extraction_status)}
+                      <div className="flex items-center gap-3">
+                        {getExtractionBadge(doc.extraction_status)}
+                        <DocumentPreviewButton
+                          documentId={doc.id}
+                          documentName={doc.name}
+                          filePath={doc.file_path}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

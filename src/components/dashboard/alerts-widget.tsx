@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Warning, WarningCircle, Info, CaretRight } from "@phosphor-icons/react";
+import { Warning, WarningCircle, Info, CaretRight, BellSimple } from "@phosphor-icons/react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
@@ -63,10 +63,14 @@ export function AlertsWidget({ alerts }: AlertsWidgetProps) {
         </Button>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[320px]">
+        <ScrollArea className="h-[280px]">
           {items.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p className="text-sm">No active alerts</p>
+            <div className="flex flex-col items-center justify-center h-full py-8 text-center">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mb-3">
+                <BellSimple className="h-5 w-5 text-green-600" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">All clear</p>
+              <p className="text-xs text-muted-foreground/70">No active alerts</p>
             </div>
           ) : (
             <div className="divide-y">

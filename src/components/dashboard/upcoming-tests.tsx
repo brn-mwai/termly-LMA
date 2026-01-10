@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock } from "@phosphor-icons/react";
+import { Calendar, Clock, CalendarBlank } from "@phosphor-icons/react";
 import Link from "next/link";
 import { format, differenceInDays } from "date-fns";
 
@@ -79,9 +79,12 @@ export function UpcomingTests({ tests }: UpcomingTestsProps) {
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <p className="text-sm">No upcoming tests scheduled</p>
-            <p className="text-xs mt-1">Add covenants to loans to track test dates</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+              <CalendarBlank className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">No upcoming tests</p>
+            <p className="text-xs text-muted-foreground/70">Tests will appear when covenants are added</p>
           </div>
         ) : (
           <div className="space-y-4">

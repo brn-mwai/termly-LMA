@@ -7,6 +7,7 @@ import {
   CreditMemoPreview,
   TableauIntegrationPreview,
   AuditTrailPreview,
+  MontyAssistantPreview,
 } from './feature-card';
 import styles from './landing.module.css';
 
@@ -16,6 +17,12 @@ const FEATURES = [
     description:
       'Upload a PDF. AI reads it in 60 seconds and pulls out the numbers you need. No more copying from documents to spreadsheets.',
     preview: <DocumentExtractionPreview />,
+  },
+  {
+    title: 'Meet Monty',
+    description:
+      'Your AI assistant cat who knows your portfolio inside out. Ask questions in plain English and get instant answers about loans, covenants, and alerts.',
+    preview: <MontyAssistantPreview />,
   },
   {
     title: 'Portfolio Dashboard',
@@ -36,7 +43,7 @@ const FEATURES = [
     preview: <CreditMemoPreview />,
   },
   {
-    title: 'Tableau Dashboard',
+    title: 'Tableau Analytics',
     description:
       'Interactive charts and visualizations. Drill down into any loan or metric. Export reports for stakeholders.',
     preview: <TableauIntegrationPreview />,

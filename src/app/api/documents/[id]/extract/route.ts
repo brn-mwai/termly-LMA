@@ -4,15 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractFromDocument, ExtractionResultSchema } from "@/lib/ai/extraction";
 import { parsePDF } from "@/lib/pdf/parser";
+import { successResponse, errorResponse, handleApiError } from "@/lib/utils/api";
+import { withRateLimit } from "@/lib/utils/rate-limit-middleware";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Apply rate limiting for document extraction
+    const rateLimitResult = await withRateLimit(request, { type: 'extract' });
+    if (rateLimitResult) return rateLimitResult;
+
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
     }
 
     const { id: documentId } = await params;
@@ -28,7 +34,7 @@ export async function POST(
 
     const userData = userDataRaw as { id: string; organization_id: string } | null;
     if (!userData?.organization_id) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return errorResponse('NOT_FOUND', 'User not found', 404);
     }
 
     // Get the document
@@ -47,7 +53,7 @@ export async function POST(
     } | null;
 
     if (docError || !document) {
-      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      return errorResponse('NOT_FOUND', 'Document not found', 404);
     }
 
     // Update status to processing
@@ -74,7 +80,7 @@ export async function POST(
           .from("documents")
           .update({ extraction_status: "failed" } as never)
           .eq("id", documentId);
-        return NextResponse.json({ error: "Failed to download document" }, { status: 500 });
+        return errorResponse('DOWNLOAD_FAILED', 'Failed to download document from storage', 500);
       }
 
       // Parse the PDF
@@ -93,9 +99,11 @@ export async function POST(
           .from("documents")
           .update({ extraction_status: "failed" } as never)
           .eq("id", documentId);
-        return NextResponse.json(
-          { error: "Failed to parse PDF", details: parseError instanceof Error ? parseError.message : "Unknown error" },
-          { status: 422 }
+        return errorResponse(
+          'PDF_PARSE_FAILED',
+          'Failed to parse PDF document',
+          422,
+          parseError instanceof Error ? parseError.message : undefined
         );
       }
     }
@@ -114,12 +122,11 @@ export async function POST(
         .from("documents")
         .update({ extraction_status: "needs_review" } as never)
         .eq("id", documentId);
-      return NextResponse.json(
-        {
-          error: "Extraction validation failed",
-          details: validated.error.issues,
-        },
-        { status: 422 }
+      return errorResponse(
+        'VALIDATION_FAILED',
+        'Extraction result validation failed - document needs review',
+        422,
+        validated.error.issues
       );
     }
 
@@ -210,8 +217,7 @@ export async function POST(
       },
     } as never);
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       documentId,
       extraction: validated.data,
       message: "Document extracted successfully",
@@ -231,9 +237,11 @@ export async function POST(
       // Ignore errors updating status
     }
 
-    return NextResponse.json(
-      { error: "Failed to extract document", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+    return errorResponse(
+      'EXTRACTION_FAILED',
+      'Failed to extract document',
+      500,
+      error instanceof Error ? error.message : undefined
     );
   }
 }
@@ -245,7 +253,7 @@ export async function GET(
   try {
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
     }
 
     const { id: documentId } = await params;
@@ -260,7 +268,7 @@ export async function GET(
 
     const userData = userDataRaw as { organization_id: string } | null;
     if (!userData?.organization_id) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return errorResponse('NOT_FOUND', 'User not found', 404);
     }
 
     // Get the document with extracted data
@@ -279,20 +287,16 @@ export async function GET(
     } | null;
 
     if (error || !doc) {
-      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      return errorResponse('NOT_FOUND', 'Document not found', 404);
     }
 
-    return NextResponse.json({
+    return successResponse({
       documentId: doc.id,
       status: doc.extraction_status,
       extraction: doc.extracted_data,
       confidenceScores: doc.confidence_scores,
     });
   } catch (error) {
-    console.error("Get extraction error:", error);
-    return NextResponse.json(
-      { error: "Failed to get extraction result" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

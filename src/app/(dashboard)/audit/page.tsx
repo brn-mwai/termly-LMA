@@ -75,7 +75,7 @@ export default async function AuditPage() {
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-medium tracking-tight">
+        <h1 className="text-3xl font-normal tracking-tight">
           Audit Trail
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -145,7 +145,7 @@ export default async function AuditPage() {
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="px-0">
           <Table>
             <TableHeader>
               <TableRow>

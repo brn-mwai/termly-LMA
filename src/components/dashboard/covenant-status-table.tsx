@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, TrendDown, TrendUp, CaretUp, CaretDown, Funnel } from "@phosphor-icons/react";
+import { Eye, TrendDown, TrendUp, CaretUp, CaretDown, Funnel, FileText } from "@phosphor-icons/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { staggerContainer, staggerItem } from "@/lib/animations";
@@ -177,9 +177,12 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No covenant tests yet</p>
-            <p className="text-sm mt-1">Upload documents to run covenant tests</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+              <FileText className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">No covenant tests yet</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">Upload documents to extract and test covenants</p>
           </div>
         ) : filteredAndSortedItems.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
@@ -255,7 +258,7 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ delay: index * 0.03 }}
-                    className="border-b transition-colors hover:bg-muted/50"
+                    className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
                   >
                     <TableCell>
                       <div>
@@ -289,7 +292,7 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
                         ) : (
                           <TrendDown className="h-3 w-3" />
                         )}
-                        {item.headroom.toFixed(1)}%
+                        <span className="font-mono">{item.headroom.toFixed(1)}%</span>
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(item.status)}</TableCell>
