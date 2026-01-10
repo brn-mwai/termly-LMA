@@ -1,15 +1,15 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { chat } from '@/lib/ai/client';
 import { MEMO_GENERATION_PROMPT, MEMO_TEMPLATES, MemoTemplate } from '@/lib/ai/prompts/generate-memo';
-import { successResponse, errorResponse, handleApiError, parseSearchParams, asUserWithOrg } from '@/lib/utils/api';
+import { successResponse, errorResponse, handleApiError, parseSearchParams } from '@/lib/utils/api';
 
 export async function GET(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { page, limit, search } = parseSearchParams(request.url);
     const { searchParams } = new URL(request.url);
     const loanId = searchParams.get('loan_id');
@@ -19,10 +19,11 @@ export async function GET(request: Request) {
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Build query
     let query = supabase
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
         loans (id, name, borrowers (name)),
         users:created_by (full_name, email)
       `, { count: 'exact' })
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
     const { loan_id, title, template, generate_ai } = body;
 
@@ -72,10 +73,11 @@ export async function POST(request: Request) {
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     let content = body.content || '';
     let aiPrompt = null;
@@ -143,13 +145,13 @@ ${financialPeriods?.slice(0, 4).map((p) =>
     const { data: memoData, error } = await supabase
       .from('memos')
       .insert({
-        organization_id: user.organization_id,
+        organization_id: orgId,
         loan_id,
         title: title || 'Credit Memo',
         content,
         generated_by_ai: !!generate_ai,
         ai_prompt: aiPrompt,
-        created_by: user.id,
+        created_by: userData.id,
       } as never)
       .select(`
         *,
@@ -163,8 +165,8 @@ ${financialPeriods?.slice(0, 4).map((p) =>
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'create',
       entity_type: 'memo',
       entity_id: memo.id,

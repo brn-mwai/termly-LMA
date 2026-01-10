@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 export interface OrganizationSettings {
   name: string;
@@ -25,25 +25,26 @@ export async function GET() {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's organization
     const { data: userData } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) {
+    if (!userData?.organization_id) {
       return errorResponse('FORBIDDEN', 'User organization not found', 403);
     }
+    const orgId = userData.organization_id;
 
     // Fetch organization details
     const { data: orgRaw, error: orgError } = await supabase
       .from('organizations')
       .select('id, name, slug')
-      .eq('id', user.organization_id)
+      .eq('id', orgId)
       .single();
 
     if (orgError || !orgRaw) {
@@ -68,7 +69,7 @@ export async function PUT(request: Request) {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     // Get user's organization
@@ -76,12 +77,13 @@ export async function PUT(request: Request) {
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) {
+    if (!userData?.organization_id) {
       return errorResponse('FORBIDDEN', 'User organization not found', 403);
     }
+    const orgId = userData.organization_id;
 
     // Update organization if provided
     if (body.organization) {
@@ -98,7 +100,7 @@ export async function PUT(request: Request) {
             ...updates,
             updated_at: new Date().toISOString(),
           } as never)
-          .eq('id', user.organization_id);
+          .eq('id', orgId);
 
         if (updateError) {
           console.error('Failed to update organization:', updateError);

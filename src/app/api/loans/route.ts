@@ -1,13 +1,13 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, parseSearchParams, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError, parseSearchParams } from '@/lib/utils/api';
 
 export async function GET(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { page, limit, search, status, sortBy, sortOrder } = parseSearchParams(request.url);
 
     // Get user's org_id
@@ -15,10 +15,11 @@ export async function GET(request: Request) {
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Build query
     let query = supabase
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
         borrowers (id, name, industry, rating),
         covenants (id, name, type, threshold)
       `, { count: 'exact' })
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null);
 
     // Apply filters
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     // Get user's org_id
@@ -74,10 +75,12 @@ export async function POST(request: Request) {
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
+    const dbUserId = userData.id;
 
     // First, create or find borrower
     let borrowerId = body.borrower_id;
@@ -87,7 +90,7 @@ export async function POST(request: Request) {
       const { data: existingBorrower } = await supabase
         .from('borrowers')
         .select('id')
-        .eq('organization_id', user.organization_id)
+        .eq('organization_id', orgId)
         .eq('name', body.borrower_name)
         .single();
 
@@ -98,7 +101,7 @@ export async function POST(request: Request) {
         const { data: newBorrower, error: borrowerError } = await supabase
           .from('borrowers')
           .insert({
-            organization_id: user.organization_id,
+            organization_id: orgId,
             name: body.borrower_name,
             industry: body.borrower_industry,
           } as never)
@@ -114,7 +117,7 @@ export async function POST(request: Request) {
     const { data: loanData, error: loanError } = await supabase
       .from('loans')
       .insert({
-        organization_id: user.organization_id,
+        organization_id: orgId,
         borrower_id: borrowerId,
         name: body.name,
         facility_type: body.facility_type,
@@ -140,8 +143,8 @@ export async function POST(request: Request) {
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: dbUserId,
       action: 'create',
       entity_type: 'loan',
       entity_id: loan.id,

@@ -1,13 +1,13 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, parseSearchParams, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError, parseSearchParams } from '@/lib/utils/api';
 
 export async function GET(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { page, limit } = parseSearchParams(request.url);
     const { searchParams } = new URL(request.url);
     const entityType = searchParams.get('entity_type');
@@ -19,10 +19,11 @@ export async function GET(request: Request) {
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Build query
     let query = supabase
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
         *,
         users:user_id (full_name, email)
       `, { count: 'exact' })
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .order('created_at', { ascending: false });
 
     if (entityType) {

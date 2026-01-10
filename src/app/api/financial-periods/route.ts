@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 // Get financial periods for a loan
 export async function GET(request: Request) {
@@ -15,23 +15,24 @@ export async function GET(request: Request) {
       return errorResponse('VALIDATION_ERROR', 'loan_id is required', 400);
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: userData } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Verify loan belongs to user's org
     const { data: loan } = await supabase
       .from('loans')
       .select('id')
       .eq('id', loanId)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .single();
 
@@ -57,17 +58,18 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     const { data: userData } = await supabase
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Validate required fields
     const { loan_id, period_end_date, period_type } = body;
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
       .from('loans')
       .select('id')
       .eq('id', loan_id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .single();
 
@@ -113,8 +115,8 @@ export async function POST(request: Request) {
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'create',
       entity_type: 'financial_period',
       entity_id: period.id,

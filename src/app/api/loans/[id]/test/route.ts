@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateCovenantTest } from "@/lib/ai/extraction";
 
 export async function POST(
@@ -14,26 +14,28 @@ export async function POST(
     }
 
     const { id: loanId } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's organization
     const { data: userDataRaw } = await supabase
       .from("users")
       .select("id, organization_id")
       .eq("clerk_id", userId)
+      .is("deleted_at", null)
       .single();
 
     const userData = userDataRaw as { id: string; organization_id: string } | null;
     if (!userData?.organization_id) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+    const orgId = userData.organization_id;
 
     // Verify loan belongs to org
     const { data: loanData, error: loanError } = await supabase
       .from("loans")
       .select("id, organization_id")
       .eq("id", loanId)
-      .eq("organization_id", userData.organization_id)
+      .eq("organization_id", orgId)
       .single();
 
     if (loanError || !loanData) {
@@ -118,7 +120,7 @@ export async function POST(
       const { data: testRecord, error: testError } = await supabase
         .from("covenant_tests")
         .insert({
-          organization_id: userData.organization_id,
+          organization_id: orgId,
           covenant_id: covenant.id,
           financial_period_id: financialPeriod.id,
           calculated_value: testResult.calculatedValue,
@@ -145,7 +147,7 @@ export async function POST(
       // Create alert if breach or warning
       if (testResult.status === "breach" || testResult.status === "warning") {
         const alertData = {
-          organization_id: userData.organization_id,
+          organization_id: orgId,
           loan_id: loanId,
           covenant_id: covenant.id,
           covenant_test_id: (testRecord as any).id,
@@ -170,7 +172,7 @@ export async function POST(
 
     // Log audit event
     await supabase.from("audit_logs").insert({
-      organization_id: userData.organization_id,
+      organization_id: orgId,
       user_id: userData.id,
       action: "test",
       entity_type: "loan",

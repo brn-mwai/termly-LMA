@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 // Get single financial period
 export async function GET(
@@ -12,16 +12,17 @@ export async function GET(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: userData } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     const { data: period, error } = await supabase
       .from('financial_periods')
@@ -30,7 +31,7 @@ export async function GET(
         loans!inner (organization_id)
       `)
       .eq('id', id)
-      .eq('loans.organization_id', user.organization_id)
+      .eq('loans.organization_id', orgId)
       .single();
 
     if (error) throw error;
@@ -52,17 +53,18 @@ export async function PATCH(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     const { data: userData } = await supabase
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Get current period with org check
     const { data: currentPeriod } = await supabase
@@ -72,7 +74,7 @@ export async function PATCH(
         loans!inner (organization_id)
       `)
       .eq('id', id)
-      .eq('loans.organization_id', user.organization_id)
+      .eq('loans.organization_id', orgId)
       .single();
 
     if (!currentPeriod) return errorResponse('NOT_FOUND', 'Financial period not found', 404);
@@ -96,7 +98,7 @@ export async function PATCH(
 
     // If marking as verified, add verifier info
     if (updates.verified === true) {
-      updates.verified_by = user.id;
+      updates.verified_by = userData.id;
       updates.verified_at = new Date().toISOString();
     }
 
@@ -114,8 +116,8 @@ export async function PATCH(
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'update',
       entity_type: 'financial_period',
       entity_id: id,
@@ -138,16 +140,17 @@ export async function DELETE(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: userData } = await supabase
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Verify period belongs to user's org
     const { data: period } = await supabase
@@ -157,7 +160,7 @@ export async function DELETE(
         loans!inner (organization_id)
       `)
       .eq('id', id)
-      .eq('loans.organization_id', user.organization_id)
+      .eq('loans.organization_id', orgId)
       .single();
 
     if (!period) return errorResponse('NOT_FOUND', 'Financial period not found', 404);
@@ -172,8 +175,8 @@ export async function DELETE(
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'delete',
       entity_type: 'financial_period',
       entity_id: id,

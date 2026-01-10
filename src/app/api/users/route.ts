@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { isValidRole, canAssignRole, Role } from '@/lib/auth/roles';
@@ -10,7 +10,7 @@ export async function GET() {
     const { user, error } = await requirePermission('users:read');
     if (error) return error;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: users, error: dbError } = await supabase
       .from('users')
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       return errorResponse('FORBIDDEN', 'You cannot assign a role higher than your own', 403);
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check if user already exists
     const { data: existingUser } = await supabase

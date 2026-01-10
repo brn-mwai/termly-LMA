@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 export async function GET(
   request: Request,
@@ -11,17 +11,18 @@ export async function GET(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's org_id
     const { data: userData } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     const { data: alert, error } = await supabase
       .from('alerts')
@@ -32,7 +33,7 @@ export async function GET(
         covenant_tests (id, calculated_value, threshold_at_test, status, headroom_percentage)
       `)
       .eq('id', id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .single();
 
     if (error) throw error;
@@ -53,7 +54,7 @@ export async function PATCH(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     // Get user
@@ -61,16 +62,17 @@ export async function PATCH(
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Prepare update
     const updateData = { ...body } as Record<string, unknown>;
 
     if (body.acknowledged === true) {
-      updateData.acknowledged_by = user.id;
+      updateData.acknowledged_by = userData.id;
       updateData.acknowledged_at = new Date().toISOString();
     }
 
@@ -79,7 +81,7 @@ export async function PATCH(
       .from('alerts')
       .update(updateData as never)
       .eq('id', id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .select()
       .single();
 
@@ -87,8 +89,8 @@ export async function PATCH(
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: body.acknowledged ? 'acknowledge' : 'update',
       entity_type: 'alert',
       entity_id: id,

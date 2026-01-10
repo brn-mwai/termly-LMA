@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 // Create a new covenant
 export async function POST(request: Request) {
@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     // Get user's org_id
@@ -16,10 +16,11 @@ export async function POST(request: Request) {
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Validate required fields
     const { loan_id, name, type, operator, threshold, testing_frequency } = body;
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
       .from('loans')
       .select('id')
       .eq('id', loan_id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .single();
 
@@ -61,8 +62,8 @@ export async function POST(request: Request) {
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'create',
       entity_type: 'covenant',
       entity_id: covenant.id,

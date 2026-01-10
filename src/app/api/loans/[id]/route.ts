@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 export async function GET(
   request: Request,
@@ -11,17 +11,18 @@ export async function GET(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's org_id
     const { data: userData } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     const { data: loan, error } = await supabase
       .from('loans')
@@ -36,7 +37,7 @@ export async function GET(
         financial_periods (id, period_end_date, period_type, revenue, ebitda_adjusted, total_debt, interest_expense)
       `)
       .eq('id', id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .single();
 
@@ -58,7 +59,7 @@ export async function PATCH(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     // Get user's org_id
@@ -66,17 +67,18 @@ export async function PATCH(
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Get current loan for audit
     const { data: currentLoan } = await supabase
       .from('loans')
       .select('*')
       .eq('id', id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .single();
 
     if (!currentLoan) return errorResponse('NOT_FOUND', 'Loan not found', 404);
@@ -89,7 +91,7 @@ export async function PATCH(
         updated_at: new Date().toISOString(),
       } as never)
       .eq('id', id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .select(`
         *,
         borrowers (id, name, industry)
@@ -100,8 +102,8 @@ export async function PATCH(
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'update',
       entity_type: 'loan',
       entity_id: id,
@@ -123,31 +125,32 @@ export async function DELETE(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's org_id
     const { data: userData } = await supabase
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Soft delete
     const { error } = await supabase
       .from('loans')
       .update({ deleted_at: new Date().toISOString() } as never)
       .eq('id', id)
-      .eq('organization_id', user.organization_id);
+      .eq('organization_id', orgId);
 
     if (error) throw error;
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'delete',
       entity_type: 'loan',
       entity_id: id,

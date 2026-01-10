@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractFromDocument, ExtractionResultSchema } from "@/lib/ai/extraction";
 import { parsePDF } from "@/lib/pdf/parser";
@@ -23,27 +22,28 @@ export async function POST(
     }
 
     const { id: documentId } = await params;
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = createAdminClient();
 
     // Get user's organization
     const { data: userDataRaw } = await supabase
       .from("users")
       .select("id, organization_id")
       .eq("clerk_id", userId)
+      .is("deleted_at", null)
       .single();
 
     const userData = userDataRaw as { id: string; organization_id: string } | null;
     if (!userData?.organization_id) {
       return errorResponse('NOT_FOUND', 'User not found', 404);
     }
+    const orgId = userData.organization_id;
 
     // Get the document
     const { data: documentRaw, error: docError } = await supabase
       .from("documents")
       .select("*")
       .eq("id", documentId)
-      .eq("organization_id", userData.organization_id)
+      .eq("organization_id", orgId)
       .single();
 
     const document = documentRaw as {
@@ -72,7 +72,7 @@ export async function POST(
       documentContent = body.documentContent;
     } else {
       // Download the file from storage
-      const { data: fileData, error: downloadError } = await adminClient.storage
+      const { data: fileData, error: downloadError } = await supabase.storage
         .from("documents")
         .download(document.file_path);
 
@@ -158,7 +158,7 @@ export async function POST(
 
         if (!existingCovenant) {
           await supabase.from("covenants").insert({
-            organization_id: userData.organization_id,
+            organization_id: orgId,
             loan_id: document.loan_id,
             name: covenant.name,
             type: covenant.type,
@@ -186,7 +186,7 @@ export async function POST(
 
         if (!existingPeriod) {
           await supabase.from("financial_periods").insert({
-            organization_id: userData.organization_id,
+            organization_id: orgId,
             loan_id: document.loan_id,
             period_end_date: period.periodEndDate,
             period_type: period.periodType,
@@ -206,7 +206,7 @@ export async function POST(
 
     // Log audit event
     await supabase.from("audit_logs").insert({
-      organization_id: userData.organization_id,
+      organization_id: orgId,
       user_id: userData.id,
       action: "extract",
       entity_type: "document",
@@ -274,7 +274,7 @@ export async function POST(
     // Try to update document status to failed
     try {
       const { id: documentId } = await params;
-      const supabase = await createClient();
+      const supabase = createAdminClient();
       await supabase
         .from("documents")
         .update({ extraction_status: "failed" } as never)
@@ -303,26 +303,28 @@ export async function GET(
     }
 
     const { id: documentId } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's organization
     const { data: userDataRaw } = await supabase
       .from("users")
       .select("organization_id")
       .eq("clerk_id", userId)
+      .is("deleted_at", null)
       .single();
 
     const userData = userDataRaw as { organization_id: string } | null;
     if (!userData?.organization_id) {
       return errorResponse('NOT_FOUND', 'User not found', 404);
     }
+    const orgId = userData.organization_id;
 
     // Get the document with extracted data
     const { data: docData, error } = await supabase
       .from("documents")
       .select("id, extraction_status, extracted_data, confidence_scores")
       .eq("id", documentId)
-      .eq("organization_id", userData.organization_id)
+      .eq("organization_id", orgId)
       .single();
 
     const doc = docData as {

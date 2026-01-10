@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { requirePermission, getAuthenticatedUser } from '@/lib/auth/api-auth';
 import { emailService, emailTemplates, sendAlertNotification } from '@/lib/email/service';
@@ -23,7 +23,7 @@ export async function GET() {
     const user = await getAuthenticatedUser();
     if (!user) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's notification preferences from database
     // Using raw query to access notification_preferences column added via migration
@@ -65,7 +65,7 @@ export async function PUT(request: Request) {
     if (!user) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const body = await request.json();
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Build preferences object
     const preferences: NotificationPreferences = {
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { type, alertId, recipients } = body;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     if (type === 'test') {
       // Send test email

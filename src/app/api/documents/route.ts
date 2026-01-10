@@ -1,14 +1,13 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { successResponse, errorResponse, handleApiError, parseSearchParams, asUserWithOrg } from '@/lib/utils/api';
+import { successResponse, errorResponse, handleApiError, parseSearchParams } from '@/lib/utils/api';
 
 export async function GET(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { page, limit, search, status } = parseSearchParams(request.url);
     const { searchParams } = new URL(request.url);
     const loanId = searchParams.get('loan_id');
@@ -18,10 +17,11 @@ export async function GET(request: Request) {
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Build query
     let query = supabase
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
         *,
         loans (id, name, borrowers (name))
       `, { count: 'exact' })
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
@@ -65,8 +65,7 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = createAdminClient();
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -82,29 +81,31 @@ export async function POST(request: Request) {
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
+    const dbUserId = userData.id;
 
     // Verify loan belongs to org
     const { data: loan } = await supabase
       .from('loans')
       .select('id')
       .eq('id', loanId)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .single();
 
     if (!loan) return errorResponse('NOT_FOUND', 'Loan not found', 404);
 
     // Upload to storage
     const fileExt = file.name.split('.').pop();
-    const fileName = `${user.organization_id}/${loanId}/${Date.now()}.${fileExt}`;
+    const fileName = `${orgId}/${loanId}/${Date.now()}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const { error: uploadError } = await adminClient.storage
+    const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(fileName, buffer, {
         contentType: file.type,
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
     const { data: docData, error: docError } = await supabase
       .from('documents')
       .insert({
-        organization_id: user.organization_id,
+        organization_id: orgId,
         loan_id: loanId,
         type: documentType,
         name: file.name,
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
         file_size: file.size,
         mime_type: file.type,
         extraction_status: 'pending',
-        uploaded_by: user.id,
+        uploaded_by: dbUserId,
       } as never)
       .select()
       .single();
@@ -136,8 +137,8 @@ export async function POST(request: Request) {
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: dbUserId,
       action: 'upload',
       entity_type: 'document',
       entity_id: document.id,

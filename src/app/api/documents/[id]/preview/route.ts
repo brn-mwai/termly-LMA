@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 export async function GET(
   request: Request,
@@ -11,24 +11,25 @@ export async function GET(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's org_id
     const { data: userData } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Get document with org check
     const { data: documentRaw, error: docError } = await supabase
       .from('documents')
       .select('id, name, file_path, mime_type, organization_id')
       .eq('id', id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .single();
 

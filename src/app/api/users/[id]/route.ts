@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { isValidRole, canAssignRole, Role } from '@/lib/auth/roles';
@@ -13,7 +13,7 @@ export async function GET(
     if (error) return error;
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: targetUser, error: dbError } = await supabase
       .from('users')
@@ -44,7 +44,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get target user
     const { data: targetUserRaw } = await supabase
@@ -130,7 +130,7 @@ export async function DELETE(
     if (error) return error;
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Can't delete yourself
     if (id === user!.id) {

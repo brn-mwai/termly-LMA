@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 export async function GET(
   request: Request,
@@ -11,17 +11,18 @@ export async function GET(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user's org_id
     const { data: userData } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     const { data: memo, error } = await supabase
       .from('memos')
@@ -31,7 +32,7 @@ export async function GET(
         users:created_by (full_name, email)
       `)
       .eq('id', id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .single();
 
@@ -53,7 +54,7 @@ export async function PATCH(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     // Get user
@@ -61,10 +62,11 @@ export async function PATCH(
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Update memo
     const { data: memo, error } = await supabase
@@ -75,7 +77,7 @@ export async function PATCH(
         updated_at: new Date().toISOString(),
       } as never)
       .eq('id', id)
-      .eq('organization_id', user.organization_id)
+      .eq('organization_id', orgId)
       .select()
       .single();
 
@@ -83,8 +85,8 @@ export async function PATCH(
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'update',
       entity_type: 'memo',
       entity_id: id,
@@ -105,31 +107,32 @@ export async function DELETE(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get user
     const { data: userData } = await supabase
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Soft delete
     const { error } = await supabase
       .from('memos')
       .update({ deleted_at: new Date().toISOString() } as never)
       .eq('id', id)
-      .eq('organization_id', user.organization_id);
+      .eq('organization_id', orgId);
 
     if (error) throw error;
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'delete',
       entity_type: 'memo',
       entity_id: id,

@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, handleApiError, asUserWithOrg } from '@/lib/utils/api';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 
 // Get single covenant
 export async function GET(
@@ -12,16 +12,17 @@ export async function GET(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: userData } = await supabase
       .from('users')
       .select('organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     const { data: covenant, error } = await supabase
       .from('covenants')
@@ -34,7 +35,7 @@ export async function GET(
         )
       `)
       .eq('id', id)
-      .eq('loans.organization_id', user.organization_id)
+      .eq('loans.organization_id', orgId)
       .is('deleted_at', null)
       .single();
 
@@ -57,17 +58,18 @@ export async function PATCH(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const body = await request.json();
 
     const { data: userData } = await supabase
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Get current covenant with org check
     const { data: currentCovenant } = await supabase
@@ -77,7 +79,7 @@ export async function PATCH(
         loans!inner (organization_id)
       `)
       .eq('id', id)
-      .eq('loans.organization_id', user.organization_id)
+      .eq('loans.organization_id', orgId)
       .is('deleted_at', null)
       .single();
 
@@ -110,8 +112,8 @@ export async function PATCH(
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'update',
       entity_type: 'covenant',
       entity_id: id,
@@ -134,16 +136,17 @@ export async function DELETE(
     if (!userId) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: userData } = await supabase
       .from('users')
       .select('id, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
-    const user = asUserWithOrg(userData);
-    if (!user) return errorResponse('NOT_FOUND', 'User not found', 404);
+    if (!userData?.organization_id) return errorResponse('NOT_FOUND', 'User not found', 404);
+    const orgId = userData.organization_id;
 
     // Verify covenant belongs to user's org
     const { data: covenant } = await supabase
@@ -153,7 +156,7 @@ export async function DELETE(
         loans!inner (organization_id)
       `)
       .eq('id', id)
-      .eq('loans.organization_id', user.organization_id)
+      .eq('loans.organization_id', orgId)
       .is('deleted_at', null)
       .single();
 
@@ -169,8 +172,8 @@ export async function DELETE(
 
     // Log audit
     await supabase.from('audit_logs').insert({
-      organization_id: user.organization_id,
-      user_id: user.id,
+      organization_id: orgId,
+      user_id: userData.id,
       action: 'delete',
       entity_type: 'covenant',
       entity_id: id,
