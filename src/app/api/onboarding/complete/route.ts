@@ -15,18 +15,36 @@ export async function POST(request: Request) {
     const adminSupabase = createAdminClient();
     const body = await request.json();
 
-    // Get user's organization and full details
-    const { data: existingUser, error: userError } = await supabase
+    // Get user's organization and full details (use admin client to bypass RLS)
+    const { data: existingUser, error: userError } = await adminSupabase
       .from('users')
       .select('id, email, full_name, organization_id')
       .eq('clerk_id', userId)
+      .is('deleted_at', null)
       .single();
 
     let userData = existingUser as { id: string; email: string; full_name: string | null; organization_id: string } | null;
 
-    // If user doesn't exist, create them (fallback for failed webhook)
+    // If user doesn't exist, check if soft-deleted or create new
     if (userError || !userData) {
-      console.log('User not found in Supabase, creating via fallback...');
+      // Check if user exists but was soft-deleted
+      const { data: deletedUser } = await adminSupabase
+        .from('users')
+        .select('id, email, full_name, organization_id')
+        .eq('clerk_id', userId)
+        .not('deleted_at', 'is', null)
+        .single();
+
+      if (deletedUser) {
+        // Reactivate soft-deleted user
+        console.log('Reactivating soft-deleted user...');
+        await adminSupabase
+          .from('users')
+          .update({ deleted_at: null, updated_at: new Date().toISOString() })
+          .eq('clerk_id', userId);
+        userData = deletedUser as { id: string; email: string; full_name: string | null; organization_id: string };
+      } else {
+        console.log('User not found in Supabase, creating via fallback...');
       const clerkUser = await currentUser();
       if (!clerkUser) {
         console.error('No Clerk user found');
@@ -105,6 +123,7 @@ export async function POST(request: Request) {
 
       userData = newUser as { id: string; email: string; full_name: string | null; organization_id: string };
       console.log(`User created via onboarding fallback: ${userId}`);
+      }
     }
 
     if (!userData) {
@@ -113,8 +132,8 @@ export async function POST(request: Request) {
 
     const user = userData;
 
-    // Get organization name
-    const { data: orgData } = await supabase
+    // Get organization name (use admin client to bypass RLS)
+    const { data: orgData } = await adminSupabase
       .from('organizations')
       .select('name')
       .eq('id', user.organization_id)
@@ -126,7 +145,7 @@ export async function POST(request: Request) {
     // Update organization name if provided
     if (body.organizationName) {
       organizationName = body.organizationName;
-      await supabase
+      await adminSupabase
         .from('organizations')
         .update({
           name: body.organizationName,
@@ -135,8 +154,8 @@ export async function POST(request: Request) {
         .eq('id', user.organization_id);
     }
 
-    // Mark onboarding as complete
-    const { error: updateError } = await supabase
+    // Mark onboarding as complete (use admin client to bypass RLS)
+    const { error: updateError } = await adminSupabase
       .from('users')
       .update({
         onboarding_completed: true,
