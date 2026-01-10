@@ -281,7 +281,7 @@ export function CreditMemoPreview() {
   );
 }
 
-export function TableauIntegrationPreview() {
+export function AnalyticsPreview() {
   return (
     <div style={{
       background: 'var(--white)',

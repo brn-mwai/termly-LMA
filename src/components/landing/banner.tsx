@@ -30,24 +30,8 @@ export function Banner() {
           textDecoration: 'underline'
         }}
       >
-        LMA EDGE
+        LMA EDGE Hackathon 2026
       </a>
-      <span style={{ color: 'white' }}>&</span>
-      <a
-        href="https://tableau2025.devpost.com/"
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          color: 'white',
-          fontWeight: 500,
-          textDecoration: 'underline'
-        }}
-      >
-        Tableau
-      </a>
-      <span style={{ color: 'white' }}>
-        Hackathons 2026
-      </span>
     </div>
   );
 }

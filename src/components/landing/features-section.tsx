@@ -5,7 +5,7 @@ import {
   RealtimeMonitoringPreview,
   SmartAlertsPreview,
   CreditMemoPreview,
-  TableauIntegrationPreview,
+  AnalyticsPreview,
   AuditTrailPreview,
   MontyAssistantPreview,
 } from './feature-card';
@@ -43,10 +43,10 @@ const FEATURES = [
     preview: <CreditMemoPreview />,
   },
   {
-    title: 'Tableau Analytics',
+    title: 'AI Analytics',
     description:
-      'Interactive charts and visualizations. Drill down into any loan or metric. Export reports for stakeholders.',
-    preview: <TableauIntegrationPreview />,
+      'Get AI-powered insights about your portfolio. Trend analysis, risk scoring, and intelligent recommendations all generated automatically.',
+    preview: <AnalyticsPreview />,
   },
   {
     title: 'Full Audit Trail',
