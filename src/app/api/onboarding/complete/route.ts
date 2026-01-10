@@ -1,7 +1,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
-import { sendWelcomeEmail } from '@/lib/email/service';
+import { errorResponse, handleApiError } from '@/lib/utils/api';
+// import { sendWelcomeEmail } from '@/lib/email/service'; // Temporarily disabled
 
 export async function POST(request: Request) {
   try {
@@ -195,35 +195,15 @@ export async function POST(request: Request) {
       return errorResponse('UPDATE_FAILED', 'Failed to complete onboarding', 500);
     }
 
-    console.log('Onboarding database update successful');
+    console.log('Onboarding database update successful for user:', userId);
 
-    // Send welcome email (non-blocking, fully wrapped in try-catch)
-    try {
-      if (user.email) {
-        const userName = user.full_name || user.email.split('@')[0];
-        console.log('Attempting to send welcome email to:', user.email);
-        // Don't await - fire and forget
-        sendWelcomeEmail(user.email, {
-          userName,
-          organizationName,
-        }).then(() => {
-          console.log('Welcome email sent successfully');
-        }).catch((err) => {
-          console.error('Failed to send welcome email:', err);
-        });
-      }
-    } catch (emailError) {
-      // Log but don't fail onboarding if email fails
-      console.error('Email error (non-fatal):', emailError);
-    }
+    // Email temporarily disabled for debugging
+    // TODO: Re-enable after fixing onboarding
 
-    console.log('Onboarding completed successfully for user:', userId);
+    console.log('Returning success response...');
 
-    // Return success directly with NextResponse to avoid any issues with successResponse
-    return new Response(JSON.stringify({ data: { success: true } }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // Return success - minimal response
+    return Response.json({ data: { success: true } }, { status: 200 });
   } catch (error) {
     console.error('Onboarding complete error:', error);
     console.error('Error details:', {
