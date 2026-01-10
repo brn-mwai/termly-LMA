@@ -1,20 +1,23 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { sendWelcomeEmail } from '@/lib/email/service';
 
 export async function POST(request: Request) {
   try {
+    console.log('Onboarding complete: Starting...');
+
     // Check environment variables first
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('SUPABASE_SERVICE_ROLE_KEY is not set');
-      return errorResponse('CONFIG_ERROR', 'Server configuration error', 500);
+      return errorResponse('CONFIG_ERROR', 'Server configuration error: Missing service role key', 500);
     }
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
       console.error('NEXT_PUBLIC_SUPABASE_URL is not set');
-      return errorResponse('CONFIG_ERROR', 'Server configuration error', 500);
+      return errorResponse('CONFIG_ERROR', 'Server configuration error: Missing Supabase URL', 500);
     }
+
+    console.log('Environment variables OK');
 
     const { userId } = await auth();
     console.log('Onboarding: userId =', userId);
@@ -22,12 +25,18 @@ export async function POST(request: Request) {
       return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
     }
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS
     const adminSupabase = createAdminClient();
+    console.log('Admin client created');
 
-    // Test admin client connection
-    console.log('Testing admin client connection...');
-    const body = await request.json();
+    // Parse request body
+    let body: { organizationName?: string } = {};
+    try {
+      body = await request.json();
+      console.log('Request body:', body);
+    } catch (e) {
+      console.log('No body or invalid JSON, using defaults');
+    }
 
     // Get user's organization and full details (use admin client to bypass RLS)
     console.log('Looking up user with clerk_id:', userId);
