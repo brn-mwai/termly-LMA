@@ -26,13 +26,21 @@ export async function POST(request: Request) {
 
     // If user doesn't exist, create them (fallback for failed webhook)
     if (userError || !userData) {
+      console.log('User not found in Supabase, creating via fallback...');
       const clerkUser = await currentUser();
       if (!clerkUser) {
+        console.error('No Clerk user found');
         return errorResponse('NOT_FOUND', 'User not found', 404);
       }
 
       const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress;
+      if (!primaryEmail) {
+        console.error('No email found for Clerk user');
+        return errorResponse('NO_EMAIL', 'No email address found', 400);
+      }
+
       const fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null;
+      console.log(`Creating user: ${primaryEmail}`);
 
       // Create or get organization
       const emailDomain = primaryEmail?.split('@')[1] || 'default';
@@ -131,16 +139,19 @@ export async function POST(request: Request) {
     }
 
     // Send welcome email
-    const userName = user.full_name || user.email.split('@')[0];
-    sendWelcomeEmail(user.email, {
-      userName,
-      organizationName,
-    }).catch((err) => {
-      console.error('Failed to send welcome email:', err);
-    });
+    if (user.email) {
+      const userName = user.full_name || user.email.split('@')[0];
+      sendWelcomeEmail(user.email, {
+        userName,
+        organizationName,
+      }).catch((err) => {
+        console.error('Failed to send welcome email:', err);
+      });
+    }
 
     return successResponse({ success: true });
   } catch (error) {
+    console.error('Onboarding complete error:', error);
     return handleApiError(error);
   }
 }
