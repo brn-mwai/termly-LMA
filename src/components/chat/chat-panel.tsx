@@ -264,6 +264,7 @@ export function ChatPanel() {
   if (!isOpen) {
     return (
       <button
+        data-tour="chat"
         onClick={handleOpenChat}
         className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform overflow-hidden"
         title="Chat with Monty"
@@ -279,7 +280,7 @@ export function ChatPanel() {
   }
 
   return (
-    <div className="w-[380px] border-l bg-background flex flex-col shrink-0 animate-in slide-in-from-right duration-200">
+    <div data-tour="chat" className="w-[380px] border-l bg-background flex flex-col shrink-0 animate-in slide-in-from-right duration-200">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30 shrink-0">
         <div className="flex items-center gap-3">

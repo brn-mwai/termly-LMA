@@ -30,6 +30,7 @@ export function NavMain({
     url: string
     icon?: Icon
     isActive?: boolean
+    tourId?: string
     items?: {
       title: string
       url: string
@@ -84,7 +85,7 @@ export function NavMain({
           }
 
           return (
-            <SidebarMenuItem key={item.title}>
+            <SidebarMenuItem key={item.title} data-tour={item.tourId}>
               <SidebarMenuButton asChild tooltip={item.title} isActive={isActive}>
                 <Link href={item.url}>
                   {item.icon && <item.icon className="size-4" weight="regular" />}

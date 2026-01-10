@@ -236,9 +236,11 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <Suspense fallback={<StatsCardsSkeleton />}>
-        <StatsCards stats={data?.stats} />
-      </Suspense>
+      <div data-tour="dashboard-stats">
+        <Suspense fallback={<StatsCardsSkeleton />}>
+          <StatsCards stats={data?.stats} />
+        </Suspense>
+      </div>
 
       {/* Charts Row - Equal height */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -253,7 +255,7 @@ export default async function DashboardPage() {
       {/* Main Content Grid - 2 columns */}
       <div className="grid gap-4 lg:grid-cols-5">
         {/* Covenant Status Table - Takes 3 columns */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3" data-tour="covenant-status">
           <Suspense fallback={<CovenantTableSkeleton />}>
             <CovenantStatusTable data={data?.covenantTests} />
           </Suspense>
@@ -261,9 +263,11 @@ export default async function DashboardPage() {
 
         {/* Sidebar widgets - Takes 2 columns */}
         <div className="lg:col-span-2 grid gap-4 content-start">
-          <Suspense fallback={<AlertsWidgetSkeleton />}>
-            <AlertsWidget alerts={data?.alerts} />
-          </Suspense>
+          <div data-tour="alerts">
+            <Suspense fallback={<AlertsWidgetSkeleton />}>
+              <AlertsWidget alerts={data?.alerts} />
+            </Suspense>
+          </div>
           <Suspense fallback={<UpcomingTestsSkeleton />}>
             <UpcomingTests tests={data?.upcomingTests} />
           </Suspense>

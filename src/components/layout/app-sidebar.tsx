@@ -27,31 +27,37 @@ const mainNavItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: House,
+    tourId: "nav-dashboard",
   },
   {
     title: "Loans",
     url: "/loans",
     icon: Bank,
+    tourId: "nav-loans",
   },
   {
     title: "Documents",
     url: "/documents",
     icon: Files,
+    tourId: "nav-documents",
   },
   {
     title: "Alerts",
     url: "/alerts",
     icon: Bell,
+    tourId: "nav-alerts",
   },
   {
     title: "Analytics",
     url: "/analytics",
     icon: ChartBar,
+    tourId: "nav-analytics",
   },
   {
     title: "Memos",
     url: "/memos",
     icon: Scroll,
+    tourId: "nav-memos",
   },
 ]
 
@@ -70,7 +76,7 @@ const systemNavItems = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" data-tour="sidebar" {...props}>
       <SidebarHeader>
         <TeamSwitcher />
       </SidebarHeader>

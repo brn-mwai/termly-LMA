@@ -12,10 +12,13 @@ export async function GET() {
     const supabase = await createClient();
 
     // Get user's onboarding status and organization
+    // First try with onboarding_completed field
     const { data: userData, error } = await supabase
       .from('users')
       .select(`
+        id,
         onboarding_completed,
+        organization_id,
         organizations (
           name
         )
@@ -23,20 +26,47 @@ export async function GET() {
       .eq('clerk_id', userId)
       .single();
 
-    if (error || !userData) {
+    // If column doesn't exist or other error, try without it
+    if (error) {
+      // Try fetching without onboarding_completed (column may not exist yet)
+      const { data: fallbackData } = await supabase
+        .from('users')
+        .select(`
+          id,
+          organization_id,
+          organizations (
+            name
+          )
+        `)
+        .eq('clerk_id', userId)
+        .single();
+
+      if (!fallbackData) {
+        return successResponse({
+          onboarding_completed: false,
+          organization_name: null,
+        });
+      }
+
+      const fallback = fallbackData as {
+        id: string;
+        organizations: { name: string } | null;
+      };
+
       return successResponse({
-        onboarding_completed: false,
-        organization_name: null,
+        onboarding_completed: false, // Assume not completed if column doesn't exist
+        organization_name: fallback.organizations?.name || null,
       });
     }
 
     const user = userData as {
-      onboarding_completed: boolean;
+      id: string;
+      onboarding_completed: boolean | null;
       organizations: { name: string } | null;
     };
 
     return successResponse({
-      onboarding_completed: user.onboarding_completed || false,
+      onboarding_completed: user.onboarding_completed === true,
       organization_name: user.organizations?.name || null,
     });
   } catch (error) {

@@ -26,7 +26,9 @@ import {
   Globe,
   CircleNotch,
   Gear,
+  Play,
 } from "@phosphor-icons/react";
+import { useTour } from "@/components/tour/tour-provider";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
@@ -48,6 +50,7 @@ interface UserPreferences {
 export default function SettingsPage() {
   const { user, isLoaded } = useUser();
   const { theme, setTheme } = useTheme();
+  const { startTour } = useTour();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -335,7 +338,7 @@ export default function SettingsPage() {
             Customize the look and feel of the application
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label>Theme</Label>
             <Select value={theme} onValueChange={setTheme}>
@@ -363,6 +366,21 @@ export default function SettingsPage() {
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                Platform Tour
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Take a guided tour of the platform&apos;s features
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={startTour}>
+              Replay Tour
+            </Button>
           </div>
         </CardContent>
       </Card>
