@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { isValidRole, canAssignRole, Role } from '@/lib/auth/roles';
+import { sendUserInvitationEmail } from '@/lib/email/service';
 
 // Get users in organization
 export async function GET() {
@@ -89,6 +90,24 @@ export async function POST(request: Request) {
       entity_id: newUser.id,
       changes: { email, role },
     } as never);
+
+    // Get organization name for email
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', user!.organizationId)
+      .single();
+
+    const org = orgData as { name: string } | null;
+
+    // Send invitation email
+    sendUserInvitationEmail(email, {
+      inviterName: user!.fullName || user!.email.split('@')[0],
+      organizationName: org?.name || 'Your Organization',
+      role,
+    }).catch((err) => {
+      console.error('Failed to send invitation email:', err);
+    });
 
     return successResponse({
       ...newUser,

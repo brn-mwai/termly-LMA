@@ -6,6 +6,19 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+// Notification preferences structure
+export interface NotificationPreferences {
+  alerts: {
+    breach: boolean;
+    warning: boolean;
+    info: boolean;
+  };
+  digest: {
+    enabled: boolean;
+    frequency: 'daily' | 'weekly' | 'monthly';
+  };
+}
+
 export type CovenantType = "leverage" | "interest_coverage" | "fixed_charge_coverage" | "current_ratio" | "min_net_worth" | "custom";
 export type CovenantOperator = "max" | "min";
 export type ComplianceStatus = "compliant" | "warning" | "breach" | "pending";
@@ -50,6 +63,9 @@ export interface Database {
           full_name: string | null;
           organization_id: string;
           role: string;
+          notification_preferences: NotificationPreferences | null;
+          onboarding_completed: boolean;
+          onboarding_completed_at: string | null;
           created_at: string;
           updated_at: string;
           deleted_at: string | null;
@@ -61,6 +77,9 @@ export interface Database {
           full_name?: string | null;
           organization_id: string;
           role?: string;
+          notification_preferences?: NotificationPreferences | null;
+          onboarding_completed?: boolean;
+          onboarding_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
@@ -72,6 +91,9 @@ export interface Database {
           full_name?: string | null;
           organization_id?: string;
           role?: string;
+          notification_preferences?: NotificationPreferences | null;
+          onboarding_completed?: boolean;
+          onboarding_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;

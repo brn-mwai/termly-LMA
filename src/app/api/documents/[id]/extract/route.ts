@@ -6,6 +6,7 @@ import { extractFromDocument, ExtractionResultSchema } from "@/lib/ai/extraction
 import { parsePDF } from "@/lib/pdf/parser";
 import { successResponse, errorResponse, handleApiError } from "@/lib/utils/api";
 import { withRateLimit } from "@/lib/utils/rate-limit-middleware";
+import { sendDocumentProcessedEmail } from "@/lib/email/service";
 
 export async function POST(
   request: NextRequest,
@@ -216,6 +217,51 @@ export async function POST(
         confidence: validated.data.overallConfidence,
       },
     } as never);
+
+    // Send document processed email to the user who uploaded it
+    const { data: fullUserData } = await supabase
+      .from("users")
+      .select("email, full_name")
+      .eq("id", userData.id)
+      .single();
+
+    const fullUser = fullUserData as { email: string; full_name: string | null } | null;
+
+    // Get loan and borrower info for the email
+    if (fullUser && document.loan_id) {
+      const { data: loanData } = await supabase
+        .from("loans")
+        .select("name, borrowers(name)")
+        .eq("id", document.loan_id)
+        .single();
+
+      const loan = loanData as { name: string; borrowers?: { name: string } } | null;
+
+      // Get document name
+      const { data: docNameData } = await supabase
+        .from("documents")
+        .select("name")
+        .eq("id", documentId)
+        .single();
+
+      const docName = docNameData as { name: string } | null;
+
+      // Determine extraction status based on confidence
+      const extractionStatus = validated.data.overallConfidence >= 0.8 ? 'completed' : 'needs_review';
+
+      sendDocumentProcessedEmail(fullUser.email, {
+        userName: fullUser.full_name || fullUser.email.split('@')[0],
+        documentId,
+        documentName: docName?.name || 'Document',
+        loanName: loan?.name || 'Unknown Loan',
+        borrowerName: loan?.borrowers?.name || 'Unknown Borrower',
+        extractionStatus,
+        covenantsFound: validated.data.covenants?.length || 0,
+        financialPeriodsFound: validated.data.financialData?.length || 0,
+      }).catch((err) => {
+        console.error('Failed to send document processed email:', err);
+      });
+    }
 
     return successResponse({
       documentId,

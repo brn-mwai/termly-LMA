@@ -2,6 +2,20 @@ import { createClient } from '@/lib/supabase/server';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { requirePermission, getAuthenticatedUser } from '@/lib/auth/api-auth';
 import { emailService, emailTemplates, sendAlertNotification } from '@/lib/email/service';
+import type { NotificationPreferences } from '@/types/database';
+
+// Default notification preferences
+const DEFAULT_PREFERENCES: NotificationPreferences = {
+  alerts: {
+    breach: true,
+    warning: true,
+    info: false,
+  },
+  digest: {
+    enabled: true,
+    frequency: 'weekly',
+  },
+};
 
 // Get notification preferences
 export async function GET() {
@@ -9,18 +23,32 @@ export async function GET() {
     const user = await getAuthenticatedUser();
     if (!user) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
-    // Get user's notification preferences from user metadata or a settings table
-    // For now, return default preferences
+    const supabase = await createClient();
+
+    // Get user's notification preferences from database
+    // Using raw query to access notification_preferences column added via migration
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching notification preferences:', error);
+    }
+
+    // Merge with defaults to ensure all fields exist
+    const rawData = userData as Record<string, unknown> | null;
+    const storedPrefs = rawData?.notification_preferences as NotificationPreferences | null;
     const preferences = {
       email: user.email,
       alerts: {
-        breach: true,
-        warning: true,
-        info: false,
+        ...DEFAULT_PREFERENCES.alerts,
+        ...(storedPrefs?.alerts || {}),
       },
       digest: {
-        enabled: true,
-        frequency: 'weekly', // 'daily' | 'weekly' | 'monthly'
+        ...DEFAULT_PREFERENCES.digest,
+        ...(storedPrefs?.digest || {}),
       },
     };
 
@@ -37,18 +65,53 @@ export async function PUT(request: Request) {
     if (!user) return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
 
     const body = await request.json();
+    const supabase = await createClient();
 
-    // In production, store preferences in database
-    // For now, just acknowledge the update
-    const preferences = {
-      email: user.email,
-      alerts: body.alerts || { breach: true, warning: true, info: false },
-      digest: body.digest || { enabled: true, frequency: 'weekly' },
+    // Build preferences object
+    const preferences: NotificationPreferences = {
+      alerts: {
+        breach: body.alerts?.breach ?? DEFAULT_PREFERENCES.alerts.breach,
+        warning: body.alerts?.warning ?? DEFAULT_PREFERENCES.alerts.warning,
+        info: body.alerts?.info ?? DEFAULT_PREFERENCES.alerts.info,
+      },
+      digest: {
+        enabled: body.digest?.enabled ?? DEFAULT_PREFERENCES.digest.enabled,
+        frequency: body.digest?.frequency ?? DEFAULT_PREFERENCES.digest.frequency,
+      },
     };
+
+    // Persist to database
+    // Note: Using type assertion as notification_preferences column added via migration
+    const updateData = {
+      notification_preferences: preferences,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase
+      .from('users')
+      .update(updateData as never)
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('Error saving notification preferences:', error);
+      return errorResponse('DATABASE_ERROR', 'Failed to save preferences', 500);
+    }
+
+    // Log the change
+    await supabase.from('audit_logs').insert({
+      organization_id: user.organizationId,
+      user_id: user.id,
+      action: 'update',
+      entity_type: 'notification_preferences',
+      entity_id: user.id,
+      changes: { preferences },
+    } as never);
 
     return successResponse({
       message: 'Preferences updated',
-      preferences,
+      preferences: {
+        email: user.email,
+        ...preferences,
+      },
     });
   } catch (error) {
     return handleApiError(error);
