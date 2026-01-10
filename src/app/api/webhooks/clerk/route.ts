@@ -125,6 +125,27 @@ export async function POST(req: Request) {
         break;
       }
 
+      case 'organization.created': {
+        const { id, name, slug } = evt.data;
+
+        const { error } = await supabase.from('organizations').insert({
+          clerk_org_id: id,
+          name: name || 'Unnamed Organization',
+          slug: slug || id,
+        });
+
+        if (error && !error.message.includes('duplicate')) throw error;
+
+        console.log(`Organization created: ${id}`);
+        break;
+      }
+
+      case 'email.created': {
+        // Email verification events - log for now
+        console.log(`Email created event received:`, evt.data);
+        break;
+      }
+
       default:
         console.log(`Unhandled event type: ${evt.type}`);
     }
