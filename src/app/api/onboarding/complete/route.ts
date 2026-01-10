@@ -1,5 +1,6 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { sendWelcomeEmail } from '@/lib/email/service';
 
@@ -11,17 +12,77 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
     const body = await request.json();
 
     // Get user's organization and full details
-    const { data: userData, error: userError } = await supabase
+    let { data: userData, error: userError } = await supabase
       .from('users')
       .select('id, email, full_name, organization_id')
       .eq('clerk_id', userId)
       .single();
 
+    // If user doesn't exist, create them (fallback for failed webhook)
     if (userError || !userData) {
-      return errorResponse('NOT_FOUND', 'User not found', 404);
+      const clerkUser = await currentUser();
+      if (!clerkUser) {
+        return errorResponse('NOT_FOUND', 'User not found', 404);
+      }
+
+      const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress;
+      const fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null;
+
+      // Create or get organization
+      const emailDomain = primaryEmail?.split('@')[1] || 'default';
+      const orgSlug = emailDomain.replace(/\./g, '-');
+
+      let orgId: string;
+
+      const { data: existingOrg } = await adminSupabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', orgSlug)
+        .single();
+
+      if (existingOrg) {
+        orgId = existingOrg.id;
+      } else {
+        const { data: newOrg, error: orgError } = await adminSupabase
+          .from('organizations')
+          .insert({
+            name: body.organizationName || emailDomain,
+            slug: orgSlug,
+          })
+          .select('id')
+          .single();
+
+        if (orgError) {
+          console.error('Failed to create organization:', orgError);
+          return errorResponse('ORG_CREATE_FAILED', 'Failed to create organization', 500);
+        }
+        orgId = newOrg.id;
+      }
+
+      // Create user
+      const { data: newUser, error: createError } = await adminSupabase
+        .from('users')
+        .insert({
+          clerk_id: userId,
+          email: primaryEmail,
+          full_name: fullName,
+          organization_id: orgId,
+          role: 'analyst',
+        })
+        .select('id, email, full_name, organization_id')
+        .single();
+
+      if (createError) {
+        console.error('Failed to create user:', createError);
+        return errorResponse('USER_CREATE_FAILED', 'Failed to create user', 500);
+      }
+
+      userData = newUser;
+      console.log(`User created via onboarding fallback: ${userId}`);
     }
 
     const user = userData as { id: string; email: string; full_name: string | null; organization_id: string };
