@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StackedBarChart } from "@/components/charts/bar-chart";
 import { statusColors } from "@/components/charts/chart-config";
-import { chartAnimation } from "@/lib/animations";
 import { ChartBar, SpinnerGap } from "@phosphor-icons/react";
 
 type DateRange = "6m" | "12m";
@@ -64,70 +62,75 @@ export function ComplianceChart() {
   const complianceRate = total > 0 ? Math.round((totals.compliant / total) * 100) : 0;
 
   return (
-    <motion.div {...chartAnimation}>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <div>
-            <CardTitle className="text-base font-medium">Compliance Trend</CardTitle>
-            {chartData.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {complianceRate}% compliance rate over {range === "6m" ? "6 months" : "1 year"}
-              </p>
-            )}
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+        <div className="min-w-0">
+          <CardTitle className="text-base font-medium">Compliance Trend</CardTitle>
+          {chartData.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {complianceRate}% compliance rate over {range === "6m" ? "6 months" : "1 year"}
+            </p>
+          )}
+        </div>
+        <div className="flex gap-1 flex-shrink-0">
+          <Button
+            variant={range === "6m" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 px-2.5 text-xs"
+            onClick={() => setRange("6m")}
+          >
+            6M
+          </Button>
+          <Button
+            variant={range === "12m" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 px-2.5 text-xs"
+            onClick={() => setRange("12m")}
+          >
+            1Y
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {loading ? (
+          <div className="flex items-center justify-center h-[220px]">
+            <SpinnerGap className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-          <div className="flex gap-1">
-            <Button
-              variant={range === "6m" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => setRange("6m")}
-            >
-              6M
-            </Button>
-            <Button
-              variant={range === "12m" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => setRange("12m")}
-            >
-              1Y
-            </Button>
+        ) : chartData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[220px] text-muted-foreground">
+            <ChartBar className="h-12 w-12 mb-2" />
+            <p className="text-sm">No compliance history data</p>
+            <p className="text-xs mt-1">Run covenant tests to see trends</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center h-[220px]">
-              <SpinnerGap className="h-8 w-8 animate-spin text-muted-foreground" />
+        ) : (
+          <>
+            {/* Legend */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3">
+              {bars.map((bar) => (
+                <div key={bar.key} className="flex items-center gap-1.5">
+                  <div
+                    className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: bar.color }}
+                  />
+                  <span className="text-xs text-muted-foreground">{bar.name}</span>
+                  <span className="text-xs font-medium">
+                    ({totals[bar.key]})
+                  </span>
+                </div>
+              ))}
             </div>
-          ) : chartData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[220px] text-muted-foreground">
-              <ChartBar className="h-12 w-12 mb-2" />
-              <p className="text-sm">No compliance history data</p>
-              <p className="text-xs mt-1">Run covenant tests to see trends</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-4 mb-3">
-                {bars.map((bar) => (
-                  <div key={bar.key} className="flex items-center gap-2">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: bar.color }}
-                    />
-                    <span className="text-xs text-muted-foreground">{bar.name}</span>
-                  </div>
-                ))}
-              </div>
+            {/* Chart */}
+            <div className="w-full">
               <StackedBarChart
                 data={chartData}
                 xKey="month"
                 bars={bars}
-                height={185}
+                height={180}
               />
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
