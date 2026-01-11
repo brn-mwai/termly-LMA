@@ -32,15 +32,14 @@ export function HeroSection() {
         </a>
 
         <h1 className={styles.heroTitle}>
-          Built for lenders.
+          Covenant monitoring
           <br />
-          <span className={styles.heroTitleHighlight}>Designed for compliance.</span>
+          <span className={styles.heroTitleHighlight}>in minutes, not hours.</span>
         </h1>
 
         <p className={styles.heroDesc}>
-          Stop manually tracking covenants in spreadsheets. Termly automates
-          financial extraction, monitors compliance in real-time, and alerts you
-          before breaches happen.
+          Termly extracts covenants from loan documents using AI and monitors compliance in real-time.
+          Cut monitoring time from 8 hours to 5 minutes per loan. Catch breaches before they become defaults.
         </p>
 
         <div className={styles.heroButtons}>
