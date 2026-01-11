@@ -86,17 +86,44 @@ export async function POST(
     if (body.documentContent) {
       documentContent = body.documentContent;
     } else {
-      // Download the file from storage
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from("documents")
-        .download(document.file_path);
+      let fileData: Blob | null = null;
 
-      if (downloadError || !fileData) {
-        await supabase
+      // Check if this is a demo document (served from public folder)
+      if (document.file_path.startsWith('demo:')) {
+        const demoFileName = document.file_path.replace('demo:', '');
+        const baseUrl = request.headers.get('origin') || `https://${request.headers.get('host')}`;
+        const publicUrl = `${baseUrl}/demo-docs/${demoFileName}`;
+
+        console.log(`[Extract] Fetching demo document from: ${publicUrl}`);
+
+        try {
+          const response = await fetch(publicUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch demo document: ${response.status}`);
+          }
+          fileData = await response.blob();
+        } catch (fetchError) {
+          console.error("[Extract] Demo document fetch error:", fetchError);
+          await supabase
+            .from("documents")
+            .update({ extraction_status: "failed" } as never)
+            .eq("id", documentId);
+          return errorResponse('DOWNLOAD_FAILED', 'Failed to fetch demo document', 500);
+        }
+      } else {
+        // Download the file from storage
+        const { data, error: downloadError } = await supabase.storage
           .from("documents")
-          .update({ extraction_status: "failed" } as never)
-          .eq("id", documentId);
-        return errorResponse('DOWNLOAD_FAILED', 'Failed to download document from storage', 500);
+          .download(document.file_path);
+
+        if (downloadError || !data) {
+          await supabase
+            .from("documents")
+            .update({ extraction_status: "failed" } as never)
+            .eq("id", documentId);
+          return errorResponse('DOWNLOAD_FAILED', 'Failed to download document from storage', 500);
+        }
+        fileData = data;
       }
 
       // Parse the PDF
