@@ -70,7 +70,7 @@ async function extractionCall(prompt: string, maxTokens: number = 3000): Promise
 export const EBITDAAddbackSchema = z.object({
   category: z.string(),
   description: z.string(),
-  cap: z.string().optional(),
+  cap: z.string().nullish(), // Allow null or undefined
   confidence: z.number().min(0).max(1),
 });
 
@@ -93,9 +93,9 @@ export const CovenantExtractionSchema = z.object({
         threshold: z.number(),
       })
     )
-    .optional(),
+    .nullish(), // Allow null or undefined
   testingFrequency: z.string(),
-  gracePeriodDays: z.number().optional(),
+  gracePeriodDays: z.number().nullish(), // Allow null or undefined
   sourceClause: z.string(),
   confidence: z.number().min(0).max(1),
 });
@@ -103,14 +103,14 @@ export const CovenantExtractionSchema = z.object({
 export const FinancialDataSchema = z.object({
   periodEndDate: z.string(),
   periodType: z.enum(["quarterly", "annual", "monthly"]),
-  revenue: z.number().optional(),
-  ebitdaReported: z.number().optional(),
-  totalDebt: z.number().optional(),
-  interestExpense: z.number().optional(),
-  fixedCharges: z.number().optional(),
-  currentAssets: z.number().optional(),
-  currentLiabilities: z.number().optional(),
-  netWorth: z.number().optional(),
+  revenue: z.number().nullish(), // Allow null or undefined
+  ebitdaReported: z.number().nullish(),
+  totalDebt: z.number().nullish(),
+  interestExpense: z.number().nullish(),
+  fixedCharges: z.number().nullish(),
+  currentAssets: z.number().nullish(),
+  currentLiabilities: z.number().nullish(),
+  netWorth: z.number().nullish(),
   confidence: z.number().min(0).max(1),
 });
 

@@ -1,4 +1,4 @@
-import { extractText, getDocumentProxy } from "unpdf";
+import { extractText } from "unpdf";
 
 export interface PDFParseResult {
   text: string;
@@ -27,24 +27,9 @@ export async function parsePDF(buffer: Buffer): Promise<PDFParseResult> {
 
     console.log(`[PDF Parser] Extracted ${totalPages} pages, text length: ${text.length}`);
 
-    // Try to get metadata
-    let metadata: PDFParseResult["metadata"] = {};
-    try {
-      const pdf = await getDocumentProxy(uint8Array);
-      const pdfMetadata = await pdf.getMetadata();
-      if (pdfMetadata?.info) {
-        const info = pdfMetadata.info as Record<string, unknown>;
-        metadata = {
-          title: info.Title as string | undefined,
-          author: info.Author as string | undefined,
-          creationDate: info.CreationDate
-            ? new Date(info.CreationDate as string)
-            : undefined,
-        };
-      }
-    } catch (metaError) {
-      console.warn("[PDF Parser] Could not extract metadata:", metaError);
-    }
+    // Skip metadata extraction - causes DataCloneError in serverless
+    // The text content is what matters for covenant extraction
+    const metadata: PDFParseResult["metadata"] = {};
 
     return {
       text: String(text),
@@ -78,12 +63,11 @@ export async function getPDFInfo(buffer: Buffer): Promise<{
 }> {
   try {
     const uint8Array = new Uint8Array(buffer);
-    const pdf = await getDocumentProxy(uint8Array);
-    const metadata = await pdf.getMetadata();
-
+    // Use extractText to get page count - avoids DataCloneError from getDocumentProxy
+    const { totalPages } = await extractText(uint8Array, { mergePages: true });
     return {
-      numPages: pdf.numPages,
-      title: (metadata?.info as Record<string, unknown>)?.Title as string | undefined,
+      numPages: totalPages,
+      title: undefined, // Skip metadata to avoid serverless issues
     };
   } catch (error) {
     console.error("[PDF Parser] PDF info extraction error:", error);
