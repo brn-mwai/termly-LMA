@@ -12,8 +12,8 @@ export default function AuthLayout({
       <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between overflow-hidden">
         {/* Background Image */}
         <Image
-          src="/Hero section image.png"
-          alt="Termly dashboard"
+          src="/Auth-image.png"
+          alt="Team collaborating on loan management"
           fill
           className="object-cover object-center"
           priority
