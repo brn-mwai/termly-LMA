@@ -9,12 +9,12 @@ export function AudienceSection() {
     {
       title: 'For Credit Analysts',
       description: 'Stop copying numbers from PDFs into Excel',
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&h=800&fit=crop',
+      image: '/Credit analysts.png',
     },
     {
       title: 'For Portfolio Managers',
       description: 'See your entire portfolio at a glance',
-      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&h=800&fit=crop',
+      image: '/Portfolio managers.png',
     },
   ];
 
