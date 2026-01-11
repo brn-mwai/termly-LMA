@@ -1,4 +1,4 @@
-import { PDFParse } from "pdf-parse";
+import { extractText, getDocumentProxy } from "unpdf";
 
 export interface PDFParseResult {
   text: string;
@@ -13,38 +13,43 @@ export interface PDFParseResult {
 
 /**
  * Extract text content from a PDF buffer
- * Uses pdf-parse v2.x class-based API
+ * Uses unpdf which is serverless-compatible (works on Vercel)
  */
 export async function parsePDF(buffer: Buffer): Promise<PDFParseResult> {
-  let parser: PDFParse | null = null;
-
   try {
     console.log(`[PDF Parser] Starting to parse PDF, buffer size: ${buffer.length} bytes`);
 
-    // Create parser instance with buffer data
-    parser = new PDFParse({ data: buffer });
+    // Convert Buffer to Uint8Array for unpdf
+    const uint8Array = new Uint8Array(buffer);
 
-    // Get document info for metadata
-    const info = await parser.getInfo();
+    // Extract text from PDF
+    const { text, totalPages } = await extractText(uint8Array, { mergePages: true });
 
-    // Extract text content
-    const textResult = await parser.getText();
+    console.log(`[PDF Parser] Extracted ${totalPages} pages, text length: ${text.length}`);
 
-    // Combine text from all pages
-    const text = textResult.pages.map(page => page.text).join("\n\n");
-
-    console.log(`[PDF Parser] Extracted ${textResult.total} pages, text length: ${text.length}`);
+    // Try to get metadata
+    let metadata: PDFParseResult["metadata"] = {};
+    try {
+      const pdf = await getDocumentProxy(uint8Array);
+      const pdfMetadata = await pdf.getMetadata();
+      if (pdfMetadata?.info) {
+        const info = pdfMetadata.info as Record<string, unknown>;
+        metadata = {
+          title: info.Title as string | undefined,
+          author: info.Author as string | undefined,
+          creationDate: info.CreationDate
+            ? new Date(info.CreationDate as string)
+            : undefined,
+        };
+      }
+    } catch (metaError) {
+      console.warn("[PDF Parser] Could not extract metadata:", metaError);
+    }
 
     return {
-      text,
-      numPages: textResult.total,
-      metadata: {
-        title: (info.info as Record<string, unknown>)?.Title as string | undefined,
-        author: (info.info as Record<string, unknown>)?.Author as string | undefined,
-        creationDate: (info.info as Record<string, unknown>)?.CreationDate
-          ? new Date((info.info as Record<string, unknown>).CreationDate as string)
-          : undefined,
-      },
+      text: String(text),
+      numPages: totalPages,
+      metadata,
       extractionMethod: "text",
     };
   } catch (error) {
@@ -52,11 +57,6 @@ export async function parsePDF(buffer: Buffer): Promise<PDFParseResult> {
     throw new Error(
       `Failed to parse PDF: ${error instanceof Error ? error.message : "Unknown error"}`
     );
-  } finally {
-    // Clean up parser resources
-    if (parser) {
-      await parser.destroy().catch(() => {});
-    }
   }
 }
 
@@ -76,29 +76,24 @@ export async function getPDFInfo(buffer: Buffer): Promise<{
   numPages: number;
   title?: string;
 }> {
-  let parser: PDFParse | null = null;
-
   try {
-    parser = new PDFParse({ data: buffer });
-    const info = await parser.getInfo();
+    const uint8Array = new Uint8Array(buffer);
+    const pdf = await getDocumentProxy(uint8Array);
+    const metadata = await pdf.getMetadata();
+
     return {
-      numPages: info.total,
-      title: (info.info as Record<string, unknown>)?.Title as string | undefined,
+      numPages: pdf.numPages,
+      title: (metadata?.info as Record<string, unknown>)?.Title as string | undefined,
     };
   } catch (error) {
     console.error("[PDF Parser] PDF info extraction error:", error);
     return { numPages: 0 };
-  } finally {
-    if (parser) {
-      await parser.destroy().catch(() => {});
-    }
   }
 }
 
 /**
  * Cleanup function (kept for backwards compatibility)
- * No longer needed with pdf-parse v2.x as resources are cleaned up per-call
  */
 export async function cleanupOCRWorker(): Promise<void> {
-  // No-op - resources are now cleaned up per-call in parsePDF
+  // No-op - unpdf doesn't need cleanup
 }

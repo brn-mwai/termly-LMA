@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     ],
   },
   // Mark packages that should use Node.js runtime, not edge
-  serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+  serverExternalPackages: ['unpdf'],
 };
 
 export default nextConfig;

@@ -47,7 +47,6 @@
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "next-themes": "^0.4.6",
-    "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^5.4.530",
     "react": "19.2.3",
     "react-day-picker": "^9.13.0",
@@ -61,6 +60,7 @@
     "svix": "^1.84.1",
     "tailwind-merge": "^3.4.0",
     "tesseract.js": "^5.1.1",
+    "unpdf": "^0.12.1",
     "uuid": "^13.0.0",
     "zod": "^4.3.5"
   },
