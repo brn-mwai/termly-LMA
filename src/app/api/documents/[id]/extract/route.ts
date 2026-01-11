@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { extractFromDocument, ExtractionResultSchema } from "@/lib/ai/extraction";
-import { parsePDF, cleanupOCRWorker } from "@/lib/pdf/parser";
+import {
+  extractFromPDFWithVision,
+  extractFromTextWithClaude,
+  PDFExtractionResultSchema,
+} from "@/lib/ai/pdf-extraction";
+import { parsePDF } from "@/lib/pdf/parser";
 import { successResponse, errorResponse, handleApiError } from "@/lib/utils/api";
 import { withRateLimit } from "@/lib/utils/rate-limit-middleware";
 import { sendDocumentProcessedEmail } from "@/lib/email/service";
 
-// Force Node.js runtime for pdf-parse and OCR support
+// Force Node.js runtime for PDF processing
 export const runtime = "nodejs";
 export const maxDuration = 120; // Allow up to 2 minutes for extraction
 
@@ -16,8 +20,8 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 }
@@ -28,12 +32,12 @@ export async function POST(
 ) {
   try {
     // Apply rate limiting for document extraction
-    const rateLimitResult = await withRateLimit(request, { type: 'extract' });
+    const rateLimitResult = await withRateLimit(request, { type: "extract" });
     if (rateLimitResult) return rateLimitResult;
 
     const { userId } = await auth();
     if (!userId) {
-      return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
+      return errorResponse("UNAUTHORIZED", "Authentication required", 401);
     }
 
     const { id: documentId } = await params;
@@ -49,7 +53,7 @@ export async function POST(
 
     const userData = userDataRaw as { id: string; organization_id: string } | null;
     if (!userData?.organization_id) {
-      return errorResponse('NOT_FOUND', 'User not found', 404);
+      return errorResponse("NOT_FOUND", "User not found", 404);
     }
     const orgId = userData.organization_id;
 
@@ -69,7 +73,7 @@ export async function POST(
     } | null;
 
     if (docError || !document) {
-      return errorResponse('NOT_FOUND', 'Document not found', 404);
+      return errorResponse("NOT_FOUND", "Document not found", 404);
     }
 
     // Update status to processing
@@ -78,107 +82,110 @@ export async function POST(
       .update({ extraction_status: "processing" } as never)
       .eq("id", documentId);
 
-    let documentContent: string;
+    console.log(`[Extract] Starting extraction for document: ${documentId}`);
+    console.log(`[Extract] File path: ${document.file_path}`);
+    console.log(`[Extract] Document type: ${document.type}`);
 
-    // Check if content was provided in request (for re-extraction without re-downloading)
-    const body = await request.json().catch(() => ({}));
+    let pdfBuffer: Buffer;
 
-    if (body.documentContent) {
-      documentContent = body.documentContent;
-    } else {
-      let fileData: Blob | null = null;
+    // Fetch the PDF file
+    if (document.file_path.startsWith("demo:")) {
+      // Demo document - fetch from public folder
+      const demoFileName = document.file_path.replace("demo:", "");
+      const baseUrl = request.headers.get("origin") || `https://${request.headers.get("host")}`;
+      const publicUrl = `${baseUrl}/demo-docs/${demoFileName}`;
 
-      // Check if this is a demo document (served from public folder)
-      if (document.file_path.startsWith('demo:')) {
-        const demoFileName = document.file_path.replace('demo:', '');
-        const baseUrl = request.headers.get('origin') || `https://${request.headers.get('host')}`;
-        const publicUrl = `${baseUrl}/demo-docs/${demoFileName}`;
+      console.log(`[Extract] Fetching demo document from: ${publicUrl}`);
 
-        console.log(`[Extract] Fetching demo document from: ${publicUrl}`);
-
-        try {
-          const response = await fetch(publicUrl);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch demo document: ${response.status}`);
-          }
-          fileData = await response.blob();
-        } catch (fetchError) {
-          console.error("[Extract] Demo document fetch error:", fetchError);
-          await supabase
-            .from("documents")
-            .update({ extraction_status: "failed" } as never)
-            .eq("id", documentId);
-          return errorResponse('DOWNLOAD_FAILED', 'Failed to fetch demo document', 500);
-        }
-      } else {
-        // Download the file from storage
-        const { data, error: downloadError } = await supabase.storage
-          .from("documents")
-          .download(document.file_path);
-
-        if (downloadError || !data) {
-          await supabase
-            .from("documents")
-            .update({ extraction_status: "failed" } as never)
-            .eq("id", documentId);
-          return errorResponse('DOWNLOAD_FAILED', 'Failed to download document from storage', 500);
-        }
-        fileData = data;
-      }
-
-      // Parse the PDF
       try {
-        const buffer = Buffer.from(await fileData.arrayBuffer());
-        console.log(`[Extract] Parsing PDF, size: ${buffer.length} bytes`);
-
-        const pdfResult = await parsePDF(buffer);
-        documentContent = pdfResult.text;
-
-        console.log(`[Extract] PDF parsed successfully:`);
-        console.log(`  - Method: ${pdfResult.extractionMethod}`);
-        console.log(`  - Pages: ${pdfResult.numPages}`);
-        console.log(`  - Text length: ${documentContent.length} chars`);
-
-        // Update document with page count and extraction method
+        const response = await fetch(publicUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch demo document: ${response.status}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        pdfBuffer = Buffer.from(arrayBuffer);
+      } catch (fetchError) {
+        console.error("[Extract] Demo document fetch error:", fetchError);
         await supabase
           .from("documents")
-          .update({
-            page_count: pdfResult.numPages,
-            extraction_method: pdfResult.extractionMethod,
-          } as never)
+          .update({ extraction_status: "failed" } as never)
           .eq("id", documentId);
+        return errorResponse("DOWNLOAD_FAILED", "Failed to fetch demo document", 500);
+      }
+    } else {
+      // Regular document - fetch from Supabase storage
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from("documents")
+        .download(document.file_path);
 
-        // Cleanup OCR worker after use
-        await cleanupOCRWorker().catch(() => {});
-      } catch (parseError) {
-        console.error("[Extract] PDF parse error:", parseError);
-        await cleanupOCRWorker().catch(() => {});
+      if (downloadError || !fileData) {
+        console.error("[Extract] Storage download error:", downloadError);
+        await supabase
+          .from("documents")
+          .update({ extraction_status: "failed" } as never)
+          .eq("id", documentId);
+        return errorResponse("DOWNLOAD_FAILED", "Failed to download document from storage", 500);
+      }
+
+      pdfBuffer = Buffer.from(await fileData.arrayBuffer());
+    }
+
+    console.log(`[Extract] PDF buffer size: ${pdfBuffer.length} bytes`);
+
+    let extractionResult;
+    let extractionMethod = "vision";
+
+    // Try Claude PDF Vision extraction first (best quality)
+    try {
+      console.log(`[Extract] Attempting Claude PDF Vision extraction...`);
+      extractionResult = await extractFromPDFWithVision(
+        pdfBuffer,
+        document.type || "credit_agreement"
+      );
+      console.log(`[Extract] Claude PDF Vision extraction successful`);
+    } catch (visionError) {
+      console.warn(`[Extract] Claude PDF Vision failed, falling back to text extraction:`, visionError);
+
+      // Fallback: Extract text from PDF and use text-based extraction
+      try {
+        extractionMethod = "text";
+        console.log(`[Extract] Parsing PDF to text...`);
+        const pdfResult = await parsePDF(pdfBuffer);
+        console.log(`[Extract] PDF parsed: ${pdfResult.numPages} pages, ${pdfResult.text.length} chars`);
+
+        if (pdfResult.text.length < 100) {
+          throw new Error("PDF text extraction returned insufficient content");
+        }
+
+        console.log(`[Extract] Attempting text-based Claude extraction...`);
+        extractionResult = await extractFromTextWithClaude(
+          pdfResult.text,
+          document.type || "credit_agreement"
+        );
+        console.log(`[Extract] Text-based extraction successful`);
+
+        // Update document with page count
+        await supabase
+          .from("documents")
+          .update({ page_count: pdfResult.numPages } as never)
+          .eq("id", documentId);
+      } catch (textError) {
+        console.error("[Extract] Text extraction also failed:", textError);
         await supabase
           .from("documents")
           .update({ extraction_status: "failed" } as never)
           .eq("id", documentId);
         return errorResponse(
-          'PDF_PARSE_FAILED',
-          'Failed to parse PDF document',
+          "EXTRACTION_FAILED",
+          "Failed to extract document content",
           422,
-          parseError instanceof Error ? parseError.message : undefined
+          textError instanceof Error ? textError.message : undefined
         );
       }
     }
 
-    // Perform multi-pass extraction
-    console.log(`[Extract] Starting AI extraction, document type: ${document.type || "credit_agreement"}`);
-    console.log(`[Extract] Document content preview: ${documentContent.substring(0, 500)}...`);
-
-    const extractionResult = await extractFromDocument(
-      documentContent,
-      document.type || "credit_agreement"
-    );
-
-    console.log(`[Extract] AI extraction completed, result keys: ${Object.keys(extractionResult || {}).join(', ')}`);
-
     // Validate the result
-    const validated = ExtractionResultSchema.safeParse(extractionResult);
+    const validated = PDFExtractionResultSchema.safeParse(extractionResult);
 
     if (!validated.success) {
       console.error("[Extract] Validation failed:", JSON.stringify(validated.error.issues, null, 2));
@@ -187,29 +194,38 @@ export async function POST(
         .update({ extraction_status: "needs_review" } as never)
         .eq("id", documentId);
       return errorResponse(
-        'VALIDATION_FAILED',
-        'Extraction result validation failed - document needs review',
+        "VALIDATION_FAILED",
+        "Extraction result validation failed - document needs review",
         422,
         validated.error.issues
       );
     }
+
+    console.log(`[Extract] Extraction validated successfully`);
+    console.log(`[Extract] - Method: ${extractionMethod}`);
+    console.log(`[Extract] - Covenants: ${validated.data.covenants?.length || 0}`);
+    console.log(`[Extract] - Financial periods: ${validated.data.financialData?.length || 0}`);
+    console.log(`[Extract] - Confidence: ${validated.data.overallConfidence}`);
 
     // Store extracted data and update document
     await supabase
       .from("documents")
       .update({
         extraction_status: "completed",
+        extraction_method: extractionMethod,
         extracted_data: validated.data,
         confidence_scores: {
           overall: validated.data.overallConfidence,
           covenants: validated.data.covenants?.map((c) => c.confidence) || [],
-          ebitda: validated.data.ebitdaAddbacks?.map((a) => a.confidence) || [],
+          financials: validated.data.financialData?.map((f) => f.confidence) || [],
         },
       } as never)
       .eq("id", documentId);
 
     // Create covenant records if covenants were extracted and loan_id exists
     if (validated.data.covenants && validated.data.covenants.length > 0 && document.loan_id) {
+      console.log(`[Extract] Creating ${validated.data.covenants.length} covenant records...`);
+
       for (const covenant of validated.data.covenants) {
         // Check if covenant already exists for this loan
         const { data: existingCovenant } = await supabase
@@ -238,6 +254,8 @@ export async function POST(
 
     // Create financial period records if financial data was extracted
     if (validated.data.financialData && validated.data.financialData.length > 0 && document.loan_id) {
+      console.log(`[Extract] Creating ${validated.data.financialData.length} financial period records...`);
+
       for (const period of validated.data.financialData) {
         // Check if period already exists
         const { data: existingPeriod } = await supabase
@@ -275,13 +293,14 @@ export async function POST(
       entity_type: "document",
       entity_id: documentId,
       changes: {
+        extraction_method: extractionMethod,
         covenants_found: validated.data.covenants?.length || 0,
         financial_periods_found: validated.data.financialData?.length || 0,
         confidence: validated.data.overallConfidence,
       },
     } as never);
 
-    // Send document processed email to the user who uploaded it
+    // Send notification email
     const { data: fullUserData } = await supabase
       .from("users")
       .select("email, full_name")
@@ -290,7 +309,6 @@ export async function POST(
 
     const fullUser = fullUserData as { email: string; full_name: string | null } | null;
 
-    // Get loan and borrower info for the email
     if (fullUser && document.loan_id) {
       const { data: loanData } = await supabase
         .from("loans")
@@ -300,7 +318,6 @@ export async function POST(
 
       const loan = loanData as { name: string; borrowers?: { name: string } } | null;
 
-      // Get document name
       const { data: docNameData } = await supabase
         .from("documents")
         .select("name")
@@ -309,26 +326,28 @@ export async function POST(
 
       const docName = docNameData as { name: string } | null;
 
-      // Determine extraction status based on confidence
-      const extractionStatus = validated.data.overallConfidence >= 0.8 ? 'completed' : 'needs_review';
+      const extractionStatus = validated.data.overallConfidence >= 0.8 ? "completed" : "needs_review";
 
       sendDocumentProcessedEmail(fullUser.email, {
-        userName: fullUser.full_name || fullUser.email.split('@')[0],
+        userName: fullUser.full_name || fullUser.email.split("@")[0],
         documentId,
-        documentName: docName?.name || 'Document',
-        loanName: loan?.name || 'Unknown Loan',
-        borrowerName: loan?.borrowers?.name || 'Unknown Borrower',
+        documentName: docName?.name || "Document",
+        loanName: loan?.name || "Unknown Loan",
+        borrowerName: loan?.borrowers?.name || "Unknown Borrower",
         extractionStatus,
         covenantsFound: validated.data.covenants?.length || 0,
         financialPeriodsFound: validated.data.financialData?.length || 0,
       }).catch((err) => {
-        console.error('Failed to send document processed email:', err);
+        console.error("Failed to send document processed email:", err);
       });
     }
+
+    console.log(`[Extract] Extraction complete for document: ${documentId}`);
 
     return successResponse({
       documentId,
       extraction: validated.data,
+      extractionMethod,
       message: "Document extracted successfully",
     });
   } catch (error) {
@@ -347,8 +366,8 @@ export async function POST(
     }
 
     return errorResponse(
-      'EXTRACTION_FAILED',
-      'Failed to extract document',
+      "EXTRACTION_FAILED",
+      "Failed to extract document",
       500,
       error instanceof Error ? error.message : undefined
     );
@@ -362,7 +381,7 @@ export async function GET(
   try {
     const { userId } = await auth();
     if (!userId) {
-      return errorResponse('UNAUTHORIZED', 'Authentication required', 401);
+      return errorResponse("UNAUTHORIZED", "Authentication required", 401);
     }
 
     const { id: documentId } = await params;
@@ -378,14 +397,14 @@ export async function GET(
 
     const userData = userDataRaw as { organization_id: string } | null;
     if (!userData?.organization_id) {
-      return errorResponse('NOT_FOUND', 'User not found', 404);
+      return errorResponse("NOT_FOUND", "User not found", 404);
     }
     const orgId = userData.organization_id;
 
     // Get the document with extracted data
     const { data: docData, error } = await supabase
       .from("documents")
-      .select("id, extraction_status, extracted_data, confidence_scores")
+      .select("id, extraction_status, extracted_data, confidence_scores, extraction_method")
       .eq("id", documentId)
       .eq("organization_id", orgId)
       .single();
@@ -395,10 +414,11 @@ export async function GET(
       extraction_status: string;
       extracted_data: unknown;
       confidence_scores: unknown;
+      extraction_method?: string;
     } | null;
 
     if (error || !doc) {
-      return errorResponse('NOT_FOUND', 'Document not found', 404);
+      return errorResponse("NOT_FOUND", "Document not found", 404);
     }
 
     return successResponse({
@@ -406,6 +426,7 @@ export async function GET(
       status: doc.extraction_status,
       extraction: doc.extracted_data,
       confidenceScores: doc.confidence_scores,
+      extractionMethod: doc.extraction_method,
     });
   } catch (error) {
     return handleApiError(error);
