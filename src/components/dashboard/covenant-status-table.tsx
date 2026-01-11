@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Table,
   TableBody,
@@ -48,9 +47,9 @@ type StatusFilter = "all" | "compliant" | "warning" | "breach";
 
 function getStatusBadge(status: CovenantStatus["status"]) {
   const variants = {
-    compliant: "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900/50",
-    warning: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-900/50",
-    breach: "bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900/50",
+    compliant: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
+    warning: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
+    breach: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
   };
 
   const labels = {
@@ -148,16 +147,16 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-        <CardTitle>Recent Covenant Tests</CardTitle>
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+        <CardTitle className="text-base font-medium">Covenant Status</CardTitle>
         <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <SelectTrigger className="w-[140px] h-9">
-              <Funnel className="h-4 w-4 mr-2" />
+            <SelectTrigger className="w-[130px] h-8 text-sm">
+              <Funnel className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="all">All ({items.length})</SelectItem>
               <SelectItem value="compliant">
                 Compliant ({statusCounts.compliant})
               </SelectItem>
@@ -169,14 +168,14 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
               </SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="h-8 text-sm" asChild>
             <Link href="/loans">View All</Link>
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 sm:px-6 sm:pb-6">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="flex flex-col items-center justify-center py-12 text-center px-4">
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <FileText className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -184,8 +183,8 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
             <p className="text-xs text-muted-foreground/70 mt-1">Upload documents to extract and test covenants</p>
           </div>
         ) : filteredAndSortedItems.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No {statusFilter} covenant tests found</p>
+          <div className="text-center py-8 text-muted-foreground px-4">
+            <p>No {statusFilter} covenants found</p>
             <Button
               variant="link"
               className="mt-2"
@@ -200,7 +199,7 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 transition-colors min-w-[140px] max-w-[180px]"
+                    className="cursor-pointer hover:bg-muted/50 transition-colors min-w-[120px]"
                     onClick={() => handleSort("borrower")}
                   >
                     <div className="flex items-center gap-1">
@@ -209,7 +208,7 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 transition-colors min-w-[100px] max-w-[140px]"
+                    className="cursor-pointer hover:bg-muted/50 transition-colors hidden sm:table-cell"
                     onClick={() => handleSort("covenantType")}
                   >
                     <div className="flex items-center gap-1">
@@ -218,7 +217,7 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="text-right cursor-pointer hover:bg-muted/50 transition-colors w-[80px]"
+                    className="text-right cursor-pointer hover:bg-muted/50 transition-colors hidden md:table-cell"
                     onClick={() => handleSort("currentValue")}
                   >
                     <div className="flex items-center justify-end gap-1">
@@ -226,9 +225,9 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
                       <SortIcon field="currentValue" sortField={sortField} sortOrder={sortOrder} />
                     </div>
                   </TableHead>
-                  <TableHead className="text-right w-[90px]">Threshold</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell">Threshold</TableHead>
                   <TableHead
-                    className="text-right cursor-pointer hover:bg-muted/50 transition-colors w-[90px]"
+                    className="text-right cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleSort("headroom")}
                   >
                     <div className="flex items-center justify-end gap-1">
@@ -237,7 +236,7 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 transition-colors w-[90px]"
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleSort("status")}
                   >
                     <div className="flex items-center gap-1">
@@ -245,69 +244,71 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
                       <SortIcon field="status" sortField={sortField} sortOrder={sortOrder} />
                     </div>
                   </TableHead>
-                  <TableHead className="text-right w-[60px]">View</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <AnimatePresence mode="popLayout">
-                  {filteredAndSortedItems.map((item, index) => (
-                    <motion.tr
-                      key={item.id}
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
-                    >
-                      <TableCell className="max-w-[180px]">
-                        <div className="truncate">
-                          <div className="font-medium truncate" title={item.borrower}>{item.borrower}</div>
-                          <div className="text-sm text-muted-foreground truncate" title={item.loanName}>
-                            {item.loanName}
-                          </div>
+                {filteredAndSortedItems.map((item) => (
+                  <TableRow key={item.id} className="group">
+                    <TableCell className="max-w-[160px]">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate" title={item.borrower}>
+                          {item.borrower}
                         </div>
-                      </TableCell>
-                      <TableCell className="max-w-[140px]">
-                        <span className="truncate block" title={item.covenantType}>{item.covenantType}</span>
-                      </TableCell>
-                      <TableCell className="text-right font-mono whitespace-nowrap">
-                        {formatValue(item.currentValue, item.covenantType)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-muted-foreground whitespace-nowrap">
-                        {item.operator === "max" || item.operator === "lte" ? "≤" : "≥"}{" "}
-                        {formatValue(item.threshold, item.covenantType)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div
-                          className={cn(
-                            "flex items-center justify-end gap-1 whitespace-nowrap",
-                            item.headroom >= 15
-                              ? "text-green-600"
-                              : item.headroom >= 0
-                              ? "text-yellow-600"
-                              : "text-red-600"
-                          )}
-                        >
-                          {item.headroom >= 0 ? (
-                            <TrendUp className="h-3 w-3 flex-shrink-0" />
-                          ) : (
-                            <TrendDown className="h-3 w-3 flex-shrink-0" />
-                          )}
-                          <span className="font-mono">{item.headroom.toFixed(1)}%</span>
+                        <div className="text-xs text-muted-foreground truncate sm:hidden" title={item.covenantType}>
+                          {item.covenantType}
                         </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(item.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/loans/${item.loanId}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
+                        <div className="text-xs text-muted-foreground truncate hidden sm:block" title={item.loanName}>
+                          {item.loanName}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell max-w-[120px]">
+                      <span className="truncate block text-sm" title={item.covenantType}>
+                        {item.covenantType}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm hidden md:table-cell">
+                      {formatValue(item.currentValue, item.covenantType)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm text-muted-foreground hidden lg:table-cell">
+                      {item.operator === "max" || item.operator === "lte" ? "≤" : "≥"}{" "}
+                      {formatValue(item.threshold, item.covenantType)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div
+                        className={cn(
+                          "flex items-center justify-end gap-1 text-sm",
+                          item.headroom >= 15
+                            ? "text-green-600 dark:text-green-400"
+                            : item.headroom >= 0
+                            ? "text-yellow-600 dark:text-yellow-400"
+                            : "text-red-600 dark:text-red-400"
+                        )}
+                      >
+                        {item.headroom >= 0 ? (
+                          <TrendUp className="h-3.5 w-3.5 flex-shrink-0" />
+                        ) : (
+                          <TrendDown className="h-3.5 w-3.5 flex-shrink-0" />
+                        )}
+                        <span className="font-mono">{item.headroom.toFixed(1)}%</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(item.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        asChild
+                      >
+                        <Link href={`/loans/${item.loanId}`}>
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
