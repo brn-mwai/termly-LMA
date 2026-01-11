@@ -13,20 +13,21 @@ import { ChartSkeleton } from "@/components/dashboard/chart-skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { auth } from "@clerk/nextjs/server";
 
 async function getDashboardData() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Get user's organization
   const userResult = await supabase
     .from("users")
     .select("organization_id")
     .eq("clerk_id", userId)
+    .is("deleted_at", null)
     .single();
 
   const userData = userResult.data as { organization_id: string } | null;

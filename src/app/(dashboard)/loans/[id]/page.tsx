@@ -27,20 +27,21 @@ import { CovenantEditDialog } from "@/components/loans/covenant-edit-dialog";
 import { AddCovenantDialog } from "@/components/loans/add-covenant-dialog";
 import { AddFinancialPeriodDialog } from "@/components/loans/add-financial-period-dialog";
 import { DocumentPreviewButton } from "@/components/documents/document-preview-button";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { auth } from "@clerk/nextjs/server";
 
 async function getLoanDetails(loanId: string) {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Get user's organization
   const userResult = await supabase
     .from("users")
     .select("organization_id")
     .eq("clerk_id", userId)
+    .is("deleted_at", null)
     .single();
 
   const userData = userResult.data as { organization_id: string } | null;

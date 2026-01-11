@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Eye, FileText, Buildings } from "@phosphor-icons/react/dist/ssr";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { auth } from "@clerk/nextjs/server";
 import { LoansFilters } from "@/components/loans/loans-filters";
 import { LoansTableSkeleton } from "@/components/loans/loans-table-skeleton";
@@ -42,12 +42,13 @@ async function getLoans() {
   const { userId } = await auth();
   if (!userId) return [];
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const userResult = await supabase
     .from("users")
     .select("organization_id")
     .eq("clerk_id", userId)
+    .is("deleted_at", null)
     .single();
 
   const userData = userResult.data as { organization_id: string } | null;

@@ -6,7 +6,7 @@ import {
   Info,
   Bell,
 } from "@phosphor-icons/react/dist/ssr";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { auth } from "@clerk/nextjs/server";
 import { AlertsTable } from "@/components/alerts";
 
@@ -27,13 +27,14 @@ async function getAlerts(): Promise<Alert[]> {
   const { userId } = await auth();
   if (!userId) return [];
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Get user's organization
   const userResult = await supabase
     .from("users")
     .select("organization_id")
     .eq("clerk_id", userId)
+    .is("deleted_at", null)
     .single();
 
   const userData = userResult.data as { organization_id: string } | null;
