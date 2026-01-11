@@ -45,6 +45,22 @@ export async function GET(
       organization_id: string;
     };
 
+    // Check if this is a demo document (served from public folder)
+    if (document.file_path.startsWith('demo:')) {
+      const demoFileName = document.file_path.replace('demo:', '');
+      const baseUrl = request.headers.get('origin') || request.headers.get('host') || '';
+      const protocol = baseUrl.startsWith('localhost') ? 'http' : 'https';
+      const publicUrl = baseUrl.startsWith('http')
+        ? `${baseUrl}/demo-docs/${demoFileName}`
+        : `${protocol}://${baseUrl}/demo-docs/${demoFileName}`;
+
+      return successResponse({
+        url: publicUrl,
+        name: document.name,
+        mimeType: document.mime_type,
+      });
+    }
+
     // Generate signed URL for the document (valid for 1 hour)
     const { data: signedUrlData, error: signedUrlError } = await supabase
       .storage

@@ -203,6 +203,25 @@ export async function POST() {
     const { error: alertError } = await supabase.from('alerts').insert(alerts as never[]);
     if (alertError) throw alertError;
 
+    // Create Documents (using demo: prefix for public demo files)
+    const documents = [
+      // TechFlow Documents
+      { id: uuidv4(), organization_id: orgId, loan_id: loans[0].id, type: 'credit_agreement', name: 'TechFlow Solutions - Credit Agreement.pdf', file_path: 'demo:01-techflow-credit-agreement.pdf', file_size: 245000, mime_type: 'application/pdf', extraction_status: 'completed', uploaded_by: dbUserId },
+      { id: uuidv4(), organization_id: orgId, loan_id: loans[0].id, type: 'compliance_certificate', name: 'TechFlow Solutions - Compliance Certificate Q3 2025.pdf', file_path: 'demo:02-techflow-compliance-certificate-q3-2025.pdf', file_size: 125000, mime_type: 'application/pdf', extraction_status: 'completed', uploaded_by: dbUserId },
+      // Midwest Documents
+      { id: uuidv4(), organization_id: orgId, loan_id: loans[1].id, type: 'credit_agreement', name: 'Midwest Manufacturing - Credit Agreement.pdf', file_path: 'demo:03-midwest-manufacturing-credit-agreement.pdf', file_size: 312000, mime_type: 'application/pdf', extraction_status: 'completed', uploaded_by: dbUserId },
+      { id: uuidv4(), organization_id: orgId, loan_id: loans[1].id, type: 'compliance_certificate', name: 'Midwest Manufacturing - Compliance Certificate Q3 2025.pdf', file_path: 'demo:04-midwest-manufacturing-compliance-certificate-q3-2025.pdf', file_size: 98000, mime_type: 'application/pdf', extraction_status: 'completed', uploaded_by: dbUserId },
+      // Harbor Documents
+      { id: uuidv4(), organization_id: orgId, loan_id: loans[2].id, type: 'credit_agreement', name: 'Harbor Retail Group - Credit Agreement.pdf', file_path: 'demo:05-harbor-retail-credit-agreement.pdf', file_size: 287000, mime_type: 'application/pdf', extraction_status: 'completed', uploaded_by: dbUserId },
+      { id: uuidv4(), organization_id: orgId, loan_id: loans[2].id, type: 'compliance_certificate', name: 'Harbor Retail Group - Compliance Certificate Q3 2025.pdf', file_path: 'demo:06-harbor-retail-compliance-certificate-q3-2025.pdf', file_size: 115000, mime_type: 'application/pdf', extraction_status: 'completed', uploaded_by: dbUserId },
+      // Sunrise Documents
+      { id: uuidv4(), organization_id: orgId, loan_id: loans[3].id, type: 'credit_agreement', name: 'Sunrise Healthcare - Credit Agreement.pdf', file_path: 'demo:08-sunrise-healthcare-credit-agreement.pdf', file_size: 298000, mime_type: 'application/pdf', extraction_status: 'completed', uploaded_by: dbUserId },
+      { id: uuidv4(), organization_id: orgId, loan_id: loans[3].id, type: 'compliance_certificate', name: 'Sunrise Healthcare - Compliance Certificate Q3 2025.pdf', file_path: 'demo:07-sunrise-healthcare-compliance-certificate-q3-2025.pdf', file_size: 108000, mime_type: 'application/pdf', extraction_status: 'completed', uploaded_by: dbUserId },
+    ];
+
+    const { error: documentError } = await supabase.from('documents').insert(documents as never[]);
+    if (documentError) throw documentError;
+
     // Log audit
     await supabase.from('audit_logs').insert({
       organization_id: orgId,
@@ -210,7 +229,7 @@ export async function POST() {
       action: 'seed_demo_data',
       entity_type: 'system',
       entity_id: orgId,
-      changes: { borrowers: 4, loans: 4, covenants: 11, alerts: 4 },
+      changes: { borrowers: 4, loans: 4, covenants: 11, alerts: 4, documents: 8 },
     } as never);
 
     return successResponse({
@@ -221,7 +240,8 @@ export async function POST() {
         covenants: covenants.length,
         financial_periods: periods.length,
         covenant_tests: covenantTests.length,
-        alerts: alerts.length
+        alerts: alerts.length,
+        documents: documents.length
       }
     }, undefined, 201);
   } catch (error) {
