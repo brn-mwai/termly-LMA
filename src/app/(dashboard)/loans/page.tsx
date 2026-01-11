@@ -150,71 +150,73 @@ async function LoansTable() {
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Buildings className="h-5 w-5" />
           Portfolio ({loans.length} loan{loans.length !== 1 ? 's' : ''})
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Borrower / Loan</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Commitment</TableHead>
-              <TableHead className="text-right">Outstanding</TableHead>
-              <TableHead>Covenants</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Maturity</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loans.map((loan) => (
-              <TableRow key={loan.id}>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{loan.borrowers?.name || "Unknown"}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {loan.name}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{loan.facility_type}</Badge>
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  {formatCurrency(loan.commitment_amount)}
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  {formatCurrency(loan.outstanding_amount)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    {loan.covenants?.length || 0}
-                  </div>
-                </TableCell>
-                <TableCell>{getStatusBadge(loan.status)}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(loan.maturity_date).toLocaleDateString("en-US", {
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" asChild>
-                    <Link href={`/loans/${loan.id}`}>
-                      <Eye className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </TableCell>
+      <CardContent className="p-0 sm:p-6">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[150px]">Borrower / Loan</TableHead>
+                <TableHead className="hidden sm:table-cell">Type</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Commitment</TableHead>
+                <TableHead className="text-right whitespace-nowrap hidden md:table-cell">Outstanding</TableHead>
+                <TableHead className="hidden lg:table-cell">Covenants</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">Maturity</TableHead>
+                <TableHead className="text-right w-[60px]">View</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {loans.map((loan) => (
+                <TableRow key={loan.id}>
+                  <TableCell className="max-w-[200px]">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate" title={loan.borrowers?.name || "Unknown"}>{loan.borrowers?.name || "Unknown"}</div>
+                      <div className="text-sm text-muted-foreground truncate" title={loan.name}>
+                        {loan.name}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <Badge variant="outline">{loan.facility_type}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono whitespace-nowrap">
+                    {formatCurrency(loan.commitment_amount)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono whitespace-nowrap hidden md:table-cell">
+                    {formatCurrency(loan.outstanding_amount)}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <div className="flex items-center gap-1">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      {loan.covenants?.length || 0}
+                    </div>
+                  </TableCell>
+                  <TableCell>{getStatusBadge(loan.status)}</TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap hidden md:table-cell">
+                    {new Date(loan.maturity_date).toLocaleDateString("en-US", {
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" asChild>
+                      <Link href={`/loans/${loan.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -222,16 +224,16 @@ async function LoansTable() {
 
 export default function LoansPage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-normal tracking-tight">Loans</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-normal tracking-tight">Loans</h1>
           <p className="text-sm text-muted-foreground">
             Manage and monitor your loan portfolio
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-fit">
           <Link href="/loans/new">
             <Plus className="h-4 w-4 mr-2" />
             Add Loan
@@ -243,9 +245,11 @@ export default function LoansPage() {
       <LoansFilters />
 
       {/* Loans Table with Suspense */}
-      <Suspense fallback={<LoansTableSkeleton />}>
-        <LoansTable />
-      </Suspense>
+      <div className="min-w-0 overflow-hidden">
+        <Suspense fallback={<LoansTableSkeleton />}>
+          <LoansTable />
+        </Suspense>
+      </div>
     </div>
   );
 }

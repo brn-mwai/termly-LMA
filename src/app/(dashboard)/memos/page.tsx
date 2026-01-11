@@ -105,18 +105,18 @@ async function MemosGrid() {
 
 export default function MemosPage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-normal tracking-tight">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-normal tracking-tight">
             Credit Memos
           </h1>
           <p className="text-sm text-muted-foreground">
             Generate and manage credit analysis memos
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-fit">
           <Link href="/memos/new">
             <Plus className="h-4 w-4 mr-2" />
             New Memo
@@ -125,9 +125,11 @@ export default function MemosPage() {
       </div>
 
       {/* Memos Grid with Suspense */}
-      <Suspense fallback={<MemosGridSkeleton />}>
-        <MemosGrid />
-      </Suspense>
+      <div className="min-w-0">
+        <Suspense fallback={<MemosGridSkeleton />}>
+          <MemosGrid />
+        </Suspense>
+      </div>
     </div>
   );
 }

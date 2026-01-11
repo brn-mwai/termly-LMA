@@ -293,31 +293,35 @@ export default async function LoanDetailPage({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/loans">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-normal tracking-tight">
-            {loan.borrowers?.name || "Unknown Borrower"}
-          </h1>
-          <p className="text-muted-foreground">{loan.name}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
+            <Link href="/loans">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-normal tracking-tight truncate" title={loan.borrowers?.name || "Unknown Borrower"}>
+              {loan.borrowers?.name || "Unknown Borrower"}
+            </h1>
+            <p className="text-muted-foreground truncate" title={loan.name}>{loan.name}</p>
+          </div>
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/documents/upload?loan=${id}`}>
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Document
-          </Link>
-        </Button>
-        <RunCovenantTestButton loanId={id} />
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/documents/upload?loan=${id}`}>
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Upload</span>
+            </Link>
+          </Button>
+          <RunCovenantTestButton loanId={id} />
+        </div>
       </div>
 
       {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -408,68 +412,70 @@ export default async function LoanDetailPage({
 
         {/* Covenants Tab */}
         <TabsContent value="covenants">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <CardTitle>Covenant Status</CardTitle>
               <AddCovenantDialog loanId={id} />
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-6">
               {covenantsWithLatestTest.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground px-4">
                   <Warning className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No covenants configured for this loan</p>
                   <p className="text-sm mt-1">Upload a credit agreement to extract covenants</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Covenant</TableHead>
-                      <TableHead className="text-right">Current Value</TableHead>
-                      <TableHead className="text-right">Threshold</TableHead>
-                      <TableHead className="text-right">Headroom</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last Test</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {covenantsWithLatestTest.map((covenant) => (
-                      <TableRow key={covenant.id}>
-                        <TableCell className="font-medium">
-                          {covenant.name}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {covenant.latestTest
-                            ? formatValue(covenant.latestTest.calculated_value)
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-muted-foreground">
-                          {covenant.operator === "max" ? "≤" : "≥"}{" "}
-                          {formatValue(covenant.threshold)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {covenant.latestTest
-                            ? getHeadroomIndicator(covenant.latestTest.headroom_percentage || 0)
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {covenant.latestTest
-                            ? getStatusBadge(covenant.latestTest.status)
-                            : getStatusBadge("pending")}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {covenant.latestTest
-                            ? new Date(covenant.latestTest.tested_at).toLocaleDateString()
-                            : "Never tested"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <CovenantEditDialog covenant={covenant} loanId={id} />
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[120px]">Covenant</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Value</TableHead>
+                        <TableHead className="text-right whitespace-nowrap hidden sm:table-cell">Threshold</TableHead>
+                        <TableHead className="text-right whitespace-nowrap hidden md:table-cell">Headroom</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="hidden lg:table-cell">Last Test</TableHead>
+                        <TableHead className="text-right w-[60px]">Edit</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {covenantsWithLatestTest.map((covenant) => (
+                        <TableRow key={covenant.id}>
+                          <TableCell className="font-medium max-w-[150px] truncate" title={covenant.name}>
+                            {covenant.name}
+                          </TableCell>
+                          <TableCell className="text-right font-mono whitespace-nowrap">
+                            {covenant.latestTest
+                              ? formatValue(covenant.latestTest.calculated_value)
+                              : "—"}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-muted-foreground whitespace-nowrap hidden sm:table-cell">
+                            {covenant.operator === "max" ? "≤" : "≥"}{" "}
+                            {formatValue(covenant.threshold)}
+                          </TableCell>
+                          <TableCell className="text-right hidden md:table-cell">
+                            {covenant.latestTest
+                              ? getHeadroomIndicator(covenant.latestTest.headroom_percentage || 0)
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {covenant.latestTest
+                              ? getStatusBadge(covenant.latestTest.status)
+                              : getStatusBadge("pending")}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground whitespace-nowrap hidden lg:table-cell">
+                            {covenant.latestTest
+                              ? new Date(covenant.latestTest.tested_at).toLocaleDateString()
+                              : "Never"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <CovenantEditDialog covenant={covenant} loanId={id} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -477,64 +483,66 @@ export default async function LoanDetailPage({
 
         {/* Financials Tab */}
         <TabsContent value="financials">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <CardTitle>Financial History</CardTitle>
               <AddFinancialPeriodDialog loanId={id} />
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-6">
               {typedFinancials.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground px-4">
                   <TrendUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No financial data available</p>
                   <p className="text-sm mt-1">Upload compliance certificates to extract financials</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Period End</TableHead>
-                      <TableHead className="text-right">Revenue</TableHead>
-                      <TableHead className="text-right">EBITDA</TableHead>
-                      <TableHead className="text-right">Total Debt</TableHead>
-                      <TableHead className="text-right">Interest Expense</TableHead>
-                      <TableHead className="text-right">Leverage</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {typedFinancials.map((period) => (
-                      <TableRow key={period.id}>
-                        <TableCell className="font-medium">
-                          {new Date(period.period_end_date).toLocaleDateString("en-US", {
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {period.revenue ? formatCurrency(period.revenue) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {period.ebitda_adjusted
-                            ? formatCurrency(period.ebitda_adjusted)
-                            : period.ebitda_reported
-                            ? formatCurrency(period.ebitda_reported)
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {period.total_debt ? formatCurrency(period.total_debt) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {period.interest_expense ? formatCurrency(period.interest_expense) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {period.total_debt && period.ebitda_adjusted
-                            ? `${(period.total_debt / period.ebitda_adjusted).toFixed(2)}x`
-                            : "—"}
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Period</TableHead>
+                        <TableHead className="text-right whitespace-nowrap hidden sm:table-cell">Revenue</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">EBITDA</TableHead>
+                        <TableHead className="text-right whitespace-nowrap hidden md:table-cell">Total Debt</TableHead>
+                        <TableHead className="text-right whitespace-nowrap hidden lg:table-cell">Interest</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Leverage</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {typedFinancials.map((period) => (
+                        <TableRow key={period.id}>
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {new Date(period.period_end_date).toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                          <TableCell className="text-right font-mono whitespace-nowrap hidden sm:table-cell">
+                            {period.revenue ? formatCurrency(period.revenue) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right font-mono whitespace-nowrap">
+                            {period.ebitda_adjusted
+                              ? formatCurrency(period.ebitda_adjusted)
+                              : period.ebitda_reported
+                              ? formatCurrency(period.ebitda_reported)
+                              : "—"}
+                          </TableCell>
+                          <TableCell className="text-right font-mono whitespace-nowrap hidden md:table-cell">
+                            {period.total_debt ? formatCurrency(period.total_debt) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right font-mono whitespace-nowrap hidden lg:table-cell">
+                            {period.interest_expense ? formatCurrency(period.interest_expense) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right font-mono whitespace-nowrap">
+                            {period.total_debt && period.ebitda_adjusted
+                              ? `${(period.total_debt / period.ebitda_adjusted).toFixed(2)}x`
+                              : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -542,8 +550,8 @@ export default async function LoanDetailPage({
 
         {/* Documents Tab */}
         <TabsContent value="documents">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <CardTitle>Documents</CardTitle>
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/documents/upload?loan=${id}`}>
@@ -560,27 +568,25 @@ export default async function LoanDetailPage({
                   <p className="text-sm mt-1">Upload credit agreements and compliance certificates</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {typedDocuments.map((doc) => (
                     <div
                       key={doc.id}
-                      className="flex items-center justify-between p-4 rounded-lg border"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border gap-3"
                     >
-                      <div className="flex items-center gap-4">
-                        {getDocumentIcon(doc.type)}
-                        <div>
-                          <p className="font-medium">{doc.name}</p>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="flex-shrink-0">{getDocumentIcon(doc.type)}</div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate" title={doc.name}>{doc.name}</p>
                           <p className="text-sm text-muted-foreground">
-                            Uploaded{" "}
                             {new Date(doc.created_at).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
-                              year: "numeric",
                             })}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         {getExtractionBadge(doc.extraction_status)}
                         <DocumentPreviewButton
                           documentId={doc.id}
@@ -597,7 +603,7 @@ export default async function LoanDetailPage({
 
         {/* History Tab */}
         <TabsContent value="history">
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Audit Trail</CardTitle>
             </CardHeader>
@@ -608,27 +614,24 @@ export default async function LoanDetailPage({
                   <p>No audit history available</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {typedAuditLogs.map((log) => (
                     <div
                       key={log.id}
-                      className="flex items-start gap-4 p-4 rounded-lg border"
+                      className="flex items-start gap-3 p-3 sm:p-4 rounded-lg border"
                     >
-                      <div className="h-2 w-2 rounded-full bg-primary mt-2" />
-                      <div className="flex-1">
+                      <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
                         <p className="font-medium capitalize">{log.action}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground capitalize">
                           {log.entity_type}
                         </p>
                       </div>
-                      <div className="text-right text-sm text-muted-foreground">
-                        <p>
+                      <div className="text-right text-xs sm:text-sm text-muted-foreground flex-shrink-0">
+                        <p className="whitespace-nowrap">
                           {new Date(log.created_at).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
                           })}
                         </p>
                       </div>

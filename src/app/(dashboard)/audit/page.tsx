@@ -71,10 +71,10 @@ export default async function AuditPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-normal tracking-tight">
+      <div className="min-w-0">
+        <h1 className="text-2xl sm:text-3xl font-normal tracking-tight">
           Audit Trail
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -83,7 +83,7 @@ export default async function AuditPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -140,54 +140,56 @@ export default async function AuditPage() {
       </div>
 
       {/* Audit Log Table */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
-        <CardContent className="px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>Details</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {auditLogs.map((log: any) => {
-                const EntityIcon = entityIcons[log.entity_type] || FileText;
-                return (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {formatDateTime(log.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        {log.users?.full_name || 'System'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={actionColors[log.action] || 'bg-gray-100 text-gray-800'}>
-                        {log.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <EntityIcon className="h-4 w-4 text-muted-foreground" />
-                        {log.entity_type}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                      {log.changes ? JSON.stringify(log.changes).slice(0, 50) + '...' : '-'}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+        <CardContent className="p-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Timestamp</TableHead>
+                  <TableHead className="hidden sm:table-cell">User</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead className="hidden lg:table-cell">Details</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {auditLogs.map((log: any) => {
+                  const EntityIcon = entityIcons[log.entity_type] || FileText;
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-muted-foreground whitespace-nowrap text-sm">
+                        {formatDateTime(log.created_at)}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate max-w-[100px]">{log.users?.full_name || 'System'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={actionColors[log.action] || 'bg-gray-100 text-gray-800'}>
+                          {log.action}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <EntityIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="capitalize">{log.entity_type}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate hidden lg:table-cell">
+                        {log.changes ? JSON.stringify(log.changes).slice(0, 50) + '...' : '-'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

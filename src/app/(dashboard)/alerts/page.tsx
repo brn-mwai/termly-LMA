@@ -92,19 +92,19 @@ export default async function AlertsPage() {
   const warningAlerts = alerts.filter((a) => a.severity === "warning");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-normal tracking-tight">Alerts</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-normal tracking-tight">Alerts</h1>
           <p className="text-sm text-muted-foreground">
-            Monitor covenant breaches, warnings, and important notifications
+            Monitor covenant breaches, warnings, and notifications
           </p>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">

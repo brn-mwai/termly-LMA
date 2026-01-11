@@ -79,73 +79,75 @@ async function DocumentsTable() {
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           All Documents ({documents.length})
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Document</TableHead>
-              <TableHead>Loan</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Uploaded</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {documents.map((doc: any) => {
-              const status = statusConfig[doc.extraction_status] || statusConfig.pending;
-              const StatusIcon = status.icon;
+      <CardContent className="p-0 sm:p-6">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[150px]">Document</TableHead>
+                <TableHead className="hidden md:table-cell">Loan</TableHead>
+                <TableHead className="hidden sm:table-cell">Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden lg:table-cell">Uploaded</TableHead>
+                <TableHead className="text-right w-[60px]">View</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {documents.map((doc: any) => {
+                const status = statusConfig[doc.extraction_status] || statusConfig.pending;
+                const StatusIcon = status.icon;
 
-              return (
-                <TableRow key={doc.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-red-500" />
-                      <div>
-                        <p className="font-medium">{doc.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {(doc.file_size / 1024 / 1024).toFixed(2)} MB
-                        </p>
+                return (
+                  <TableRow key={doc.id}>
+                    <TableCell className="max-w-[200px]">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileText className="h-5 w-5 text-red-500 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-medium truncate" title={doc.name}>{doc.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(doc.file_size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Link href={`/loans/${doc.loan_id}`} className="text-blue-600 hover:underline">
-                      {doc.loans?.borrowers?.name || 'Unknown'}
-                    </Link>
-                    <p className="text-sm text-muted-foreground">{doc.loans?.name}</p>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{doc.type?.replace('_', ' ')}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={status.className}>
-                      <StatusIcon className={`h-3 w-3 mr-1 ${doc.extraction_status === 'processing' ? 'animate-spin' : ''}`} />
-                      {status.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(doc.created_at)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={`/documents/${doc.id}`}>
-                        <Eye className="h-4 w-4" />
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell max-w-[150px]">
+                      <Link href={`/loans/${doc.loan_id}`} className="text-blue-600 hover:underline truncate block" title={doc.loans?.borrowers?.name || 'Unknown'}>
+                        {doc.loans?.borrowers?.name || 'Unknown'}
                       </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                      <p className="text-sm text-muted-foreground truncate" title={doc.loans?.name}>{doc.loans?.name}</p>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <Badge variant="outline">{doc.type?.replace('_', ' ')}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={status.className}>
+                        <StatusIcon className={`h-3 w-3 mr-1 ${doc.extraction_status === 'processing' ? 'animate-spin' : ''}`} />
+                        {status.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap hidden lg:table-cell">
+                      {formatDate(doc.created_at)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link href={`/documents/${doc.id}`}>
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -153,27 +155,29 @@ async function DocumentsTable() {
 
 export default function DocumentsPage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-normal tracking-tight">Documents</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-normal tracking-tight">Documents</h1>
           <p className="text-sm text-muted-foreground">
             Upload and extract data from loan documents
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-fit">
           <Link href="/documents/upload">
             <UploadSimple className="h-4 w-4 mr-2" />
-            Upload Document
+            Upload
           </Link>
         </Button>
       </div>
 
       {/* Documents Table with Suspense */}
-      <Suspense fallback={<DocumentsTableSkeleton />}>
-        <DocumentsTable />
-      </Suspense>
+      <div className="min-w-0 overflow-hidden">
+        <Suspense fallback={<DocumentsTableSkeleton />}>
+          <DocumentsTable />
+        </Suspense>
+      </div>
     </div>
   );
 }
