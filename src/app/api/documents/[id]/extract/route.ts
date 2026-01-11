@@ -140,15 +140,21 @@ export async function POST(
     }
 
     // Perform multi-pass extraction
+    console.log(`[Extract] Starting AI extraction, document type: ${document.type || "credit_agreement"}`);
+    console.log(`[Extract] Document content preview: ${documentContent.substring(0, 500)}...`);
+
     const extractionResult = await extractFromDocument(
       documentContent,
       document.type || "credit_agreement"
     );
 
+    console.log(`[Extract] AI extraction completed, result keys: ${Object.keys(extractionResult || {}).join(', ')}`);
+
     // Validate the result
     const validated = ExtractionResultSchema.safeParse(extractionResult);
 
     if (!validated.success) {
+      console.error("[Extract] Validation failed:", JSON.stringify(validated.error.issues, null, 2));
       await supabase
         .from("documents")
         .update({ extraction_status: "needs_review" } as never)

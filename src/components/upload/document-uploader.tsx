@@ -172,15 +172,18 @@ export function DocumentUploader({ loanId: initialLoanId, onComplete }: Document
       if (!extractRes.ok) {
         // Try to parse error as JSON, fallback to status text
         let errorMessage = `Extraction failed (${extractRes.status})`;
+        let errorDetails: unknown = null;
         try {
           const errorData = await extractRes.json();
+          console.log("Extraction error response:", JSON.stringify(errorData, null, 2));
           errorMessage = errorData.error?.message || errorData.error || errorMessage;
+          errorDetails = errorData.error?.details || errorData.details;
         } catch {
           // Response is not JSON (e.g., 405 returns plain text)
           errorMessage = `Extraction failed: ${extractRes.statusText || extractRes.status}`;
         }
         // Even if extraction fails, the upload succeeded
-        console.warn("Extraction warning:", errorMessage);
+        console.warn("Extraction warning:", errorMessage, errorDetails);
         setFiles((prev) =>
           prev.map((f) =>
             f.id === fileId
