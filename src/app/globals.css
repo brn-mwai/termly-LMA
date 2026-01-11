@@ -209,7 +209,7 @@
     font-weight: 400;
   }
 
-  /* Custom Scrollbar */
+  /* Custom Scrollbar - Light Mode */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -229,9 +229,27 @@
     background: var(--gray-400);
   }
 
-  /* Firefox scrollbar */
+  /* Firefox scrollbar - Light Mode */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--gray-300) var(--gray-100);
+  }
+
+  /* Custom Scrollbar - Dark Mode */
+  .dark ::-webkit-scrollbar-track {
+    background: var(--gray-800);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: var(--gray-600);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-500);
+  }
+
+  /* Firefox scrollbar - Dark Mode */
+  .dark * {
+    scrollbar-color: var(--gray-600) var(--gray-800);
   }
 }
