@@ -85,6 +85,13 @@ export default function DocumentDetailPage() {
     fetchDocument();
   }, [id]);
 
+  // Auto-trigger extraction for pending documents
+  useEffect(() => {
+    if (document?.extraction_status === 'pending' && !extracting) {
+      triggerExtraction();
+    }
+  }, [document?.extraction_status]);
+
   async function fetchDocument() {
     try {
       const res = await fetch(`/api/documents/${id}`);
@@ -103,27 +110,32 @@ export default function DocumentDetailPage() {
 
   async function triggerExtraction() {
     setExtracting(true);
+    // Update UI to show processing
+    setDocument((prev: DocumentData | null) => prev ? { ...prev, extraction_status: 'processing' } : null);
+
     try {
       const res = await fetch(`/api/documents/${id}/extract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          documentContent: 'Document content would be extracted from storage',
-          documentType: document?.type,
-        }),
+        body: JSON.stringify({}), // Let API download and parse the actual PDF
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        const data = await res.json();
-        setDocument((prev: any) => ({
+        setDocument((prev: DocumentData | null) => prev ? {
           ...prev,
           extraction_status: 'completed',
-          extracted_data: data.extraction,
-          confidence_scores: { overall: data.extraction?.overallConfidence || 0.95 },
-        }));
+          extracted_data: data.data?.extraction || data.extraction,
+          confidence_scores: { overall: data.data?.extraction?.overallConfidence || data.extraction?.overallConfidence || 0.85 },
+        } : null);
+      } else {
+        console.error('Extraction failed:', data);
+        setDocument((prev: DocumentData | null) => prev ? { ...prev, extraction_status: 'failed' } : null);
       }
     } catch (error) {
       console.error('Extraction failed:', error);
+      setDocument((prev: DocumentData | null) => prev ? { ...prev, extraction_status: 'failed' } : null);
     } finally {
       setExtracting(false);
     }
