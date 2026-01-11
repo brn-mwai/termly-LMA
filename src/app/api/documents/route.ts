@@ -2,6 +2,10 @@ import { auth } from '@clerk/nextjs/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { successResponse, errorResponse, handleApiError, parseSearchParams } from '@/lib/utils/api';
 
+// Force Node.js runtime for file uploads
+export const runtime = "nodejs";
+export const maxDuration = 60; // Allow up to 1 minute for uploads
+
 export async function GET(request: Request) {
   try {
     const { userId } = await auth();

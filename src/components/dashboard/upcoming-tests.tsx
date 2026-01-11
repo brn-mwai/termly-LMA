@@ -67,8 +67,8 @@ export function UpcomingTests({ tests }: UpcomingTestsProps) {
   const items = tests || [];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
           Upcoming Tests
@@ -79,35 +79,35 @@ export function UpcomingTests({ tests }: UpcomingTestsProps) {
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="flex flex-col items-center justify-center py-8 text-center px-4">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
               <CalendarBlank className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-muted-foreground">No upcoming tests</p>
-            <p className="text-xs text-muted-foreground/70">Tests will appear when covenants are added</p>
+            <p className="text-xs text-muted-foreground/70 text-center">Tests will appear when covenants are added</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {items.map((test) => (
               <Link
                 key={test.id}
                 href={`/loans/${test.loanId}`}
-                className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors gap-2 overflow-hidden"
               >
-                <div className="flex items-center gap-3">
-                  {getStatusDot(test.lastStatus)}
-                  <div>
-                    <p className="font-medium text-sm">{test.borrower}</p>
-                    <p className="text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="flex-shrink-0">{getStatusDot(test.lastStatus)}</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate" title={test.borrower}>{test.borrower}</p>
+                    <p className="text-xs text-muted-foreground truncate" title={`${test.covenantType} - ${test.loanName}`}>
                       {test.covenantType} - {test.loanName}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="text-right hidden sm:block">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
                       <Clock className="h-3 w-3" />
-                      {format(test.testDate, "MMM d, yyyy")}
+                      {format(test.testDate, "MMM d")}
                     </div>
                   </div>
                   {getDaysUntilBadge(test.testDate)}

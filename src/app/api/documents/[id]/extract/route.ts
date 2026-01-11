@@ -2,10 +2,14 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractFromDocument, ExtractionResultSchema } from "@/lib/ai/extraction";
-import { parsePDF } from "@/lib/pdf/parser";
+import { parsePDF, cleanupOCRWorker } from "@/lib/pdf/parser";
 import { successResponse, errorResponse, handleApiError } from "@/lib/utils/api";
 import { withRateLimit } from "@/lib/utils/rate-limit-middleware";
 import { sendDocumentProcessedEmail } from "@/lib/email/service";
+
+// Force Node.js runtime for pdf-parse and OCR support
+export const runtime = "nodejs";
+export const maxDuration = 120; // Allow up to 2 minutes for extraction
 
 export async function POST(
   request: NextRequest,
@@ -87,15 +91,30 @@ export async function POST(
       // Parse the PDF
       try {
         const buffer = Buffer.from(await fileData.arrayBuffer());
+        console.log(`[Extract] Parsing PDF, size: ${buffer.length} bytes`);
+
         const pdfResult = await parsePDF(buffer);
         documentContent = pdfResult.text;
 
-        // Update document with page count
+        console.log(`[Extract] PDF parsed successfully:`);
+        console.log(`  - Method: ${pdfResult.extractionMethod}`);
+        console.log(`  - Pages: ${pdfResult.numPages}`);
+        console.log(`  - Text length: ${documentContent.length} chars`);
+
+        // Update document with page count and extraction method
         await supabase
           .from("documents")
-          .update({ page_count: pdfResult.numPages } as never)
+          .update({
+            page_count: pdfResult.numPages,
+            extraction_method: pdfResult.extractionMethod,
+          } as never)
           .eq("id", documentId);
+
+        // Cleanup OCR worker after use
+        await cleanupOCRWorker().catch(() => {});
       } catch (parseError) {
+        console.error("[Extract] PDF parse error:", parseError);
+        await cleanupOCRWorker().catch(() => {});
         await supabase
           .from("documents")
           .update({ extraction_status: "failed" } as never)

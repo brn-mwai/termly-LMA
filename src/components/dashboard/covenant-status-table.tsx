@@ -147,8 +147,8 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
   }, [items]);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle>Recent Covenant Tests</CardTitle>
         <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
@@ -195,118 +195,122 @@ export function CovenantStatusTable({ data }: CovenantStatusTableProps) {
             </Button>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleSort("borrower")}
-                >
-                  <div className="flex items-center gap-1">
-                    Borrower
-                    <SortIcon field="borrower" sortField={sortField} sortOrder={sortOrder} />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleSort("covenantType")}
-                >
-                  <div className="flex items-center gap-1">
-                    Covenant
-                    <SortIcon field="covenantType" sortField={sortField} sortOrder={sortOrder} />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="text-right cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleSort("currentValue")}
-                >
-                  <div className="flex items-center justify-end gap-1">
-                    Actual
-                    <SortIcon field="currentValue" sortField={sortField} sortOrder={sortOrder} />
-                  </div>
-                </TableHead>
-                <TableHead className="text-right">Threshold</TableHead>
-                <TableHead
-                  className="text-right cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleSort("headroom")}
-                >
-                  <div className="flex items-center justify-end gap-1">
-                    Headroom
-                    <SortIcon field="headroom" sortField={sortField} sortOrder={sortOrder} />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleSort("status")}
-                >
-                  <div className="flex items-center gap-1">
-                    Status
-                    <SortIcon field="status" sortField={sortField} sortOrder={sortOrder} />
-                  </div>
-                </TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <AnimatePresence mode="popLayout">
-                {filteredAndSortedItems.map((item, index) => (
-                  <motion.tr
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ delay: index * 0.03 }}
-                    className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/50 transition-colors min-w-[140px] max-w-[180px]"
+                    onClick={() => handleSort("borrower")}
                   >
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{item.borrower}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {item.loanName}
+                    <div className="flex items-center gap-1">
+                      Borrower
+                      <SortIcon field="borrower" sortField={sortField} sortOrder={sortOrder} />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/50 transition-colors min-w-[100px] max-w-[140px]"
+                    onClick={() => handleSort("covenantType")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Covenant
+                      <SortIcon field="covenantType" sortField={sortField} sortOrder={sortOrder} />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hover:bg-muted/50 transition-colors w-[80px]"
+                    onClick={() => handleSort("currentValue")}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      Actual
+                      <SortIcon field="currentValue" sortField={sortField} sortOrder={sortOrder} />
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right w-[90px]">Threshold</TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hover:bg-muted/50 transition-colors w-[90px]"
+                    onClick={() => handleSort("headroom")}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      Headroom
+                      <SortIcon field="headroom" sortField={sortField} sortOrder={sortOrder} />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/50 transition-colors w-[90px]"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Status
+                      <SortIcon field="status" sortField={sortField} sortOrder={sortOrder} />
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right w-[60px]">View</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <AnimatePresence mode="popLayout">
+                  {filteredAndSortedItems.map((item, index) => (
+                    <motion.tr
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ delay: index * 0.03 }}
+                      className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
+                    >
+                      <TableCell className="max-w-[180px]">
+                        <div className="truncate">
+                          <div className="font-medium truncate" title={item.borrower}>{item.borrower}</div>
+                          <div className="text-sm text-muted-foreground truncate" title={item.loanName}>
+                            {item.loanName}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{item.covenantType}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatValue(item.currentValue, item.covenantType)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-muted-foreground">
-                      {item.operator === "max" || item.operator === "lte" ? "≤" : "≥"}{" "}
-                      {formatValue(item.threshold, item.covenantType)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div
-                        className={cn(
-                          "flex items-center justify-end gap-1",
-                          item.headroom >= 15
-                            ? "text-green-600"
-                            : item.headroom >= 0
-                            ? "text-yellow-600"
-                            : "text-red-600"
-                        )}
-                      >
-                        {item.headroom >= 0 ? (
-                          <TrendUp className="h-3 w-3" />
-                        ) : (
-                          <TrendDown className="h-3 w-3" />
-                        )}
-                        <span className="font-mono">{item.headroom.toFixed(1)}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(item.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/loans/${item.loanId}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell className="max-w-[140px]">
+                        <span className="truncate block" title={item.covenantType}>{item.covenantType}</span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono whitespace-nowrap">
+                        {formatValue(item.currentValue, item.covenantType)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground whitespace-nowrap">
+                        {item.operator === "max" || item.operator === "lte" ? "≤" : "≥"}{" "}
+                        {formatValue(item.threshold, item.covenantType)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div
+                          className={cn(
+                            "flex items-center justify-end gap-1 whitespace-nowrap",
+                            item.headroom >= 15
+                              ? "text-green-600"
+                              : item.headroom >= 0
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                          )}
+                        >
+                          {item.headroom >= 0 ? (
+                            <TrendUp className="h-3 w-3 flex-shrink-0" />
+                          ) : (
+                            <TrendDown className="h-3 w-3 flex-shrink-0" />
+                          )}
+                          <span className="font-mono">{item.headroom.toFixed(1)}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(item.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/loans/${item.loanId}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

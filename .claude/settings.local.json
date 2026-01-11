@@ -42,7 +42,8 @@
       "Bash(echo:*)",
       "Bash(where:*)",
       "Bash(pdflatex:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm show:*)"
     ]
   }
 }

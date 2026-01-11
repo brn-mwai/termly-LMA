@@ -52,8 +52,8 @@ export function AlertsWidget({ alerts }: AlertsWidgetProps) {
   const items = alerts || [];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle className="flex items-center gap-2">
           <Warning className="h-5 w-5" />
           Recent Alerts
@@ -78,22 +78,22 @@ export function AlertsWidget({ alerts }: AlertsWidgetProps) {
                 <Link
                   key={alert.id}
                   href={`/alerts/${alert.id}`}
-                  className="flex items-start gap-3 p-4 hover:bg-muted/50 transition-colors"
+                  className="flex items-start gap-3 p-4 hover:bg-muted/50 transition-colors overflow-hidden"
                 >
-                  <div className="mt-0.5">{getSeverityIcon(alert.severity)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="mt-0.5 flex-shrink-0">{getSeverityIcon(alert.severity)}</div>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       {getSeverityBadge(alert.severity)}
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {formatDistanceToNow(alert.createdAt, { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="font-medium text-sm">{alert.title}</p>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="font-medium text-sm truncate" title={alert.title}>{alert.title}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2" title={`${alert.borrower}: ${alert.message}`}>
                       {alert.borrower}: {alert.message}
                     </p>
                   </div>
-                  <CaretRight className="h-4 w-4 text-muted-foreground mt-2" />
+                  <CaretRight className="h-4 w-4 text-muted-foreground mt-2 flex-shrink-0" />
                 </Link>
               ))}
             </div>
