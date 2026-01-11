@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  extractFromPDFWithVision,
-  extractFromTextWithClaude,
+  extractWithFallback,
   PDFExtractionResultSchema,
 } from "@/lib/ai/pdf-extraction";
 import { parsePDF } from "@/lib/pdf/parser";
@@ -135,53 +134,48 @@ export async function POST(
     let extractionResult;
     let extractionMethod = "vision";
 
-    // Try Claude PDF Vision extraction first (best quality)
+    // Parse PDF to text first (needed for fallbacks)
+    let documentText = "";
     try {
-      console.log(`[Extract] Attempting Claude PDF Vision extraction...`);
-      extractionResult = await extractFromPDFWithVision(
-        pdfBuffer,
-        document.type || "credit_agreement"
-      );
-      console.log(`[Extract] Claude PDF Vision extraction successful`);
-    } catch (visionError) {
-      console.warn(`[Extract] Claude PDF Vision failed, falling back to text extraction:`, visionError);
+      console.log(`[Extract] Parsing PDF to text...`);
+      const pdfResult = await parsePDF(pdfBuffer);
+      documentText = pdfResult.text;
+      console.log(`[Extract] PDF parsed: ${pdfResult.numPages} pages, ${documentText.length} chars`);
 
-      // Fallback: Extract text from PDF and use text-based extraction
-      try {
-        extractionMethod = "text";
-        console.log(`[Extract] Parsing PDF to text...`);
-        const pdfResult = await parsePDF(pdfBuffer);
-        console.log(`[Extract] PDF parsed: ${pdfResult.numPages} pages, ${pdfResult.text.length} chars`);
-
-        if (pdfResult.text.length < 100) {
-          throw new Error("PDF text extraction returned insufficient content");
-        }
-
-        console.log(`[Extract] Attempting text-based Claude extraction...`);
-        extractionResult = await extractFromTextWithClaude(
-          pdfResult.text,
-          document.type || "credit_agreement"
-        );
-        console.log(`[Extract] Text-based extraction successful`);
-
-        // Update document with page count
+      // Update document with page count
+      if (pdfResult.numPages > 0) {
         await supabase
           .from("documents")
           .update({ page_count: pdfResult.numPages } as never)
           .eq("id", documentId);
-      } catch (textError) {
-        console.error("[Extract] Text extraction also failed:", textError);
-        await supabase
-          .from("documents")
-          .update({ extraction_status: "failed" } as never)
-          .eq("id", documentId);
-        return errorResponse(
-          "EXTRACTION_FAILED",
-          "Failed to extract document content",
-          422,
-          textError instanceof Error ? textError.message : undefined
-        );
       }
+    } catch (parseError) {
+      console.warn(`[Extract] PDF parsing failed, will try vision-only:`, parseError);
+    }
+
+    // Use smart fallback extraction (Claude Vision → Claude Text → Groq Llama)
+    try {
+      console.log(`[Extract] Starting smart extraction with fallback...`);
+      const { result, method } = await extractWithFallback(
+        pdfBuffer,
+        documentText,
+        document.type || "credit_agreement"
+      );
+      extractionResult = result;
+      extractionMethod = method;
+      console.log(`[Extract] Extraction successful using method: ${method}`);
+    } catch (extractError) {
+      console.error("[Extract] All extraction methods failed:", extractError);
+      await supabase
+        .from("documents")
+        .update({ extraction_status: "failed" } as never)
+        .eq("id", documentId);
+      return errorResponse(
+        "EXTRACTION_FAILED",
+        "Failed to extract document content",
+        422,
+        extractError instanceof Error ? extractError.message : undefined
+      );
     }
 
     // Validate the result

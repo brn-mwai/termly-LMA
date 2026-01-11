@@ -1,10 +1,38 @@
 import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { z } from "zod";
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Lazy initialization for clients
+let anthropicClient: Anthropic | null = null;
+let groqClient: Groq | null = null;
+
+function getAnthropicClient(): Anthropic | null {
+  if (!anthropicClient) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey || apiKey.includes("your_key_here") || apiKey === "") {
+      return null;
+    }
+    anthropicClient = new Anthropic({ apiKey });
+  }
+  return anthropicClient;
+}
+
+function getGroqClient(): Groq | null {
+  if (!groqClient) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey || apiKey.includes("your_key_here") || apiKey === "") {
+      return null;
+    }
+    groqClient = new Groq({ apiKey });
+  }
+  return groqClient;
+}
+
+// Best Groq models for document extraction (2026)
+// llama-3.3-70b-versatile: Best accuracy, 128k context
+// llama-3.1-8b-instant: Faster fallback
+const GROQ_PRIMARY_MODEL = "llama-3.3-70b-versatile";
+const GROQ_FALLBACK_MODEL = "llama-3.1-8b-instant";
 
 // Extraction schemas
 export const EBITDAAddbackSchema = z.object({
@@ -233,6 +261,11 @@ export async function extractFromPDFWithVision(
   pdfBuffer: Buffer,
   documentType: string
 ): Promise<PDFExtractionResult> {
+  const anthropic = getAnthropicClient();
+  if (!anthropic) {
+    throw new Error("Anthropic API key not configured");
+  }
+
   console.log(`[PDF Vision] Starting extraction for document type: ${documentType}`);
   console.log(`[PDF Vision] PDF size: ${pdfBuffer.length} bytes`);
 
@@ -327,8 +360,13 @@ export async function extractFromTextWithClaude(
   documentText: string,
   documentType: string
 ): Promise<PDFExtractionResult> {
-  console.log(`[Text Extraction] Starting text-based extraction`);
-  console.log(`[Text Extraction] Text length: ${documentText.length} chars`);
+  const anthropic = getAnthropicClient();
+  if (!anthropic) {
+    throw new Error("Anthropic API key not configured");
+  }
+
+  console.log(`[Claude Text] Starting text-based extraction`);
+  console.log(`[Claude Text] Text length: ${documentText.length} chars`);
 
   const prompt = PROMPTS[documentType] || PROMPTS.credit_agreement;
 
@@ -368,13 +406,184 @@ export async function extractFromTextWithClaude(
         ...extractedData,
         documentType: documentType as PDFExtractionResult["documentType"],
         overallConfidence: 0.5,
-        extractionNotes: ["Text-based extraction - lower confidence"],
+        extractionNotes: ["Claude text extraction - validation warnings"],
       };
     }
 
+    console.log(`[Claude Text] Extraction successful`);
     return validated.data;
   } catch (error) {
-    console.error(`[Text Extraction] Error:`, error);
+    console.error(`[Claude Text] Error:`, error);
     throw error;
   }
+}
+
+/**
+ * Fallback text-based extraction using Groq with Llama 3.3 70B
+ * Used when Claude is not available
+ */
+export async function extractFromTextWithGroq(
+  documentText: string,
+  documentType: string
+): Promise<PDFExtractionResult> {
+  const groq = getGroqClient();
+  if (!groq) {
+    throw new Error("Groq API key not configured");
+  }
+
+  console.log(`[Groq] Starting extraction with ${GROQ_PRIMARY_MODEL}`);
+  console.log(`[Groq] Text length: ${documentText.length} chars`);
+
+  const prompt = PROMPTS[documentType] || PROMPTS.credit_agreement;
+
+  // Truncate text if too long (Groq context: 128k for llama-3.3-70b)
+  const maxLength = 120000;
+  const truncatedText = documentText.length > maxLength
+    ? documentText.substring(0, maxLength) + "\n\n[Document truncated...]"
+    : documentText;
+
+  // Try primary model first (llama-3.3-70b-versatile)
+  let model = GROQ_PRIMARY_MODEL;
+
+  try {
+    console.log(`[Groq] Sending to ${model}...`);
+
+    const response = await groq.chat.completions.create({
+      model,
+      max_tokens: 8000,
+      temperature: 0.1, // Low temperature for structured extraction
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert financial analyst. Extract structured data from loan documents. Always return valid JSON.",
+        },
+        {
+          role: "user",
+          content: `${prompt}\n\n---\nDOCUMENT TEXT:\n${truncatedText}`,
+        },
+      ],
+    });
+
+    const responseText = response.choices[0]?.message?.content || "";
+    console.log(`[Groq] Response length: ${responseText.length} chars`);
+
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in Groq response");
+    }
+
+    const extractedData = JSON.parse(jsonMatch[0]);
+    const validated = PDFExtractionResultSchema.safeParse(extractedData);
+
+    if (!validated.success) {
+      console.warn(`[Groq] Validation warnings:`, validated.error.issues);
+      return {
+        ...extractedData,
+        documentType: documentType as PDFExtractionResult["documentType"],
+        overallConfidence: 0.6,
+        extractionNotes: [`Groq ${model} extraction - validation warnings`],
+      };
+    }
+
+    console.log(`[Groq] Extraction successful with ${model}`);
+    console.log(`[Groq] - Covenants: ${validated.data.covenants?.length || 0}`);
+    console.log(`[Groq] - Financial periods: ${validated.data.financialData?.length || 0}`);
+
+    return validated.data;
+  } catch (primaryError) {
+    console.warn(`[Groq] Primary model ${model} failed:`, primaryError);
+
+    // Try fallback model (llama-3.1-8b-instant)
+    model = GROQ_FALLBACK_MODEL;
+    console.log(`[Groq] Trying fallback model ${model}...`);
+
+    try {
+      const response = await groq.chat.completions.create({
+        model,
+        max_tokens: 8000,
+        temperature: 0.1,
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert financial analyst. Extract structured data from loan documents. Always return valid JSON.",
+          },
+          {
+            role: "user",
+            content: `${prompt}\n\n---\nDOCUMENT TEXT:\n${truncatedText}`,
+          },
+        ],
+      });
+
+      const responseText = response.choices[0]?.message?.content || "";
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+
+      if (!jsonMatch) {
+        throw new Error("No JSON found in Groq fallback response");
+      }
+
+      const extractedData = JSON.parse(jsonMatch[0]);
+      const validated = PDFExtractionResultSchema.safeParse(extractedData);
+
+      if (!validated.success) {
+        return {
+          ...extractedData,
+          documentType: documentType as PDFExtractionResult["documentType"],
+          overallConfidence: 0.5,
+          extractionNotes: [`Groq ${model} fallback extraction`],
+        };
+      }
+
+      console.log(`[Groq] Fallback extraction successful with ${model}`);
+      return validated.data;
+    } catch (fallbackError) {
+      console.error(`[Groq] Fallback model also failed:`, fallbackError);
+      throw fallbackError;
+    }
+  }
+}
+
+/**
+ * Smart extraction with automatic provider fallback
+ * Order: Claude PDF Vision → Claude Text → Groq Llama
+ */
+export async function extractWithFallback(
+  pdfBuffer: Buffer,
+  documentText: string,
+  documentType: string
+): Promise<{ result: PDFExtractionResult; method: string }> {
+  // 1. Try Claude PDF Vision (best quality)
+  const anthropic = getAnthropicClient();
+  if (anthropic) {
+    try {
+      console.log(`[Fallback] Trying Claude PDF Vision...`);
+      const result = await extractFromPDFWithVision(pdfBuffer, documentType);
+      return { result, method: "claude_vision" };
+    } catch (error) {
+      console.warn(`[Fallback] Claude PDF Vision failed:`, error);
+    }
+
+    // 2. Try Claude Text extraction
+    try {
+      console.log(`[Fallback] Trying Claude Text extraction...`);
+      const result = await extractFromTextWithClaude(documentText, documentType);
+      return { result, method: "claude_text" };
+    } catch (error) {
+      console.warn(`[Fallback] Claude Text failed:`, error);
+    }
+  }
+
+  // 3. Try Groq Llama (open source fallback)
+  const groq = getGroqClient();
+  if (groq) {
+    try {
+      console.log(`[Fallback] Trying Groq Llama extraction...`);
+      const result = await extractFromTextWithGroq(documentText, documentType);
+      return { result, method: "groq_llama" };
+    } catch (error) {
+      console.warn(`[Fallback] Groq Llama failed:`, error);
+    }
+  }
+
+  // All providers failed
+  throw new Error("All extraction providers failed. Please check API keys.");
 }
