@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractFromDocument, ExtractionResultSchema } from "@/lib/ai/extraction";
@@ -10,6 +10,17 @@ import { sendDocumentProcessedEmail } from "@/lib/email/service";
 // Force Node.js runtime for pdf-parse and OCR support
 export const runtime = "nodejs";
 export const maxDuration = 120; // Allow up to 2 minutes for extraction
+
+// Handle OPTIONS for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
 
 export async function POST(
   request: NextRequest,

@@ -20,11 +20,11 @@ export default function DashboardLayout({
         <SidebarProvider>
           <ChatProvider>
             <AppSidebar />
-            <SidebarInset className="flex flex-col h-screen overflow-hidden">
+            <SidebarInset className="flex flex-col h-screen overflow-hidden min-w-0">
               <DashboardHeader />
-              <div className="flex flex-1 overflow-hidden">
-                <main className="flex-1 overflow-y-auto bg-muted/30">
-                  <div className="mx-auto w-full max-w-7xl p-6">
+              <div className="flex flex-1 overflow-hidden min-w-0">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/30 min-w-0">
+                  <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
                     {children}
                   </div>
                 </main>

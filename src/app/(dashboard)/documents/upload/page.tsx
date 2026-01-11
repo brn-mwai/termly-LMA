@@ -23,8 +23,8 @@ function UploadDocumentContent() {
   const preselectedLoanId = searchParams.get('loan');
 
   const [file, setFile] = useState<File | null>(null);
-  const [loanId, setLoanId] = useState(preselectedLoanId || '');
-  const [documentType, setDocumentType] = useState('');
+  const [loanId, setLoanId] = useState<string>(preselectedLoanId || '');
+  const [documentType, setDocumentType] = useState<string>('');
   const [loans, setLoans] = useState<any[]>([]);
   const [loansLoading, setLoansLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -204,7 +204,7 @@ function UploadDocumentContent() {
                   </div>
                 </div>
               ) : (
-                <Select value={loanId || undefined} onValueChange={(val) => { console.log('Selected loan:', val); setLoanId(val); }}>
+                <Select value={loanId} onValueChange={setLoanId}>
                   <SelectTrigger className="w-full bg-background">
                     <SelectValue placeholder="Select a loan" />
                   </SelectTrigger>

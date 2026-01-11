@@ -211,26 +211,28 @@ export default async function DashboardPage() {
   const data = await getDashboardData();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-normal tracking-tight">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-normal tracking-tight truncate">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             Monitor your loan portfolio covenant compliance
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button variant="outline" size="sm" asChild>
             <Link href="/loans/new">
               <Plus className="h-4 w-4 mr-1.5" />
-              Add Loan
+              <span className="hidden sm:inline">Add Loan</span>
+              <span className="sm:hidden">Add</span>
             </Link>
           </Button>
           <Button size="sm" asChild>
             <Link href="/documents/upload">
               <Upload className="h-4 w-4 mr-1.5" />
-              Upload Document
+              <span className="hidden sm:inline">Upload Document</span>
+              <span className="sm:hidden">Upload</span>
             </Link>
           </Button>
         </div>
@@ -254,24 +256,26 @@ export default async function DashboardPage() {
       </div>
 
       {/* Main Content Grid - 2 columns */}
-      <div className="grid gap-4 lg:grid-cols-5">
+      <div className="grid gap-4 lg:grid-cols-5 min-w-0">
         {/* Covenant Status Table - Takes 3 columns */}
-        <div className="lg:col-span-3" data-tour="covenant-status">
+        <div className="lg:col-span-3 min-w-0 overflow-hidden" data-tour="covenant-status">
           <Suspense fallback={<CovenantTableSkeleton />}>
             <CovenantStatusTable data={data?.covenantTests} />
           </Suspense>
         </div>
 
         {/* Sidebar widgets - Takes 2 columns */}
-        <div className="lg:col-span-2 grid gap-4 content-start">
-          <div data-tour="alerts">
+        <div className="lg:col-span-2 grid gap-4 content-start min-w-0 overflow-hidden">
+          <div data-tour="alerts" className="min-w-0 overflow-hidden">
             <Suspense fallback={<AlertsWidgetSkeleton />}>
               <AlertsWidget alerts={data?.alerts} />
             </Suspense>
           </div>
-          <Suspense fallback={<UpcomingTestsSkeleton />}>
-            <UpcomingTests tests={data?.upcomingTests} />
-          </Suspense>
+          <div className="min-w-0 overflow-hidden">
+            <Suspense fallback={<UpcomingTestsSkeleton />}>
+              <UpcomingTests tests={data?.upcomingTests} />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>
