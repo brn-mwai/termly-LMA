@@ -140,11 +140,11 @@ export function DocumentUploader() {
 
   const getStatusBadge = (status: UploadStatus) => {
     const variants = {
-      pending: "bg-gray-100 text-gray-800",
-      uploading: "bg-blue-100 text-blue-800",
-      processing: "bg-yellow-100 text-yellow-800",
-      complete: "bg-green-100 text-green-800",
-      error: "bg-red-100 text-red-800",
+      pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+      uploading: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
+      processing: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
+      complete: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
+      error: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
     };
 
     const labels = {

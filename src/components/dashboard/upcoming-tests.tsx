@@ -26,25 +26,25 @@ function getDaysUntilBadge(testDate: Date) {
 
   if (days < 0) {
     return (
-      <Badge variant="secondary" className="bg-red-100 text-red-800">
+      <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
         Overdue
       </Badge>
     );
   } else if (days <= 7) {
     return (
-      <Badge variant="secondary" className="bg-red-100 text-red-800">
+      <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
         {days} day{days !== 1 ? 's' : ''}
       </Badge>
     );
   } else if (days <= 14) {
     return (
-      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
         {days} days
       </Badge>
     );
   }
   return (
-    <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+    <Badge variant="secondary" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
       {days} days
     </Badge>
   );

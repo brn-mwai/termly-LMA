@@ -48,9 +48,9 @@ type StatusFilter = "all" | "compliant" | "warning" | "breach";
 
 function getStatusBadge(status: CovenantStatus["status"]) {
   const variants = {
-    compliant: "bg-green-100 text-green-800 hover:bg-green-100",
-    warning: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-    breach: "bg-red-100 text-red-800 hover:bg-red-100",
+    compliant: "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900/50",
+    warning: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-900/50",
+    breach: "bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900/50",
   };
 
   const labels = {

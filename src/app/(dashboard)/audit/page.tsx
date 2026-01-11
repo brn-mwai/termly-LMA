@@ -21,12 +21,12 @@ import {
 import { formatDateTime } from '@/lib/utils/format';
 
 const actionColors: Record<string, string> = {
-  create: 'bg-green-100 text-green-800',
-  update: 'bg-blue-100 text-blue-800',
-  delete: 'bg-red-100 text-red-800',
-  upload: 'bg-purple-100 text-purple-800',
-  extract: 'bg-yellow-100 text-yellow-800',
-  acknowledge: 'bg-gray-100 text-gray-800',
+  create: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  update: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+  delete: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  upload: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
+  extract: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+  acknowledge: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
 };
 
 const entityIcons: Record<string, React.ElementType> = {

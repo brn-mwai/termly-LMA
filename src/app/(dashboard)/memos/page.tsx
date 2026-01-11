@@ -69,7 +69,7 @@ async function MemosGrid() {
                 </p>
               </div>
               {memo.generated_by_ai && (
-                <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
                   <Sparkle className="h-3 w-3 mr-1" />
                   AI
                 </Badge>

@@ -19,11 +19,11 @@ import {
 import { formatDate } from '@/lib/utils/format';
 
 const statusConfig: Record<string, { icon: React.ElementType; label: string; className: string }> = {
-  pending: { icon: Clock, label: 'Pending', className: 'bg-gray-100 text-gray-800' },
-  processing: { icon: CircleNotch, label: 'Processing', className: 'bg-blue-100 text-blue-800' },
-  completed: { icon: CheckCircle, label: 'Extracted', className: 'bg-green-100 text-green-800' },
-  failed: { icon: WarningCircle, label: 'Failed', className: 'bg-red-100 text-red-800' },
-  needs_review: { icon: WarningCircle, label: 'Needs Review', className: 'bg-yellow-100 text-yellow-800' },
+  pending: { icon: Clock, label: 'Pending', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
+  processing: { icon: CircleNotch, label: 'Processing', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
+  completed: { icon: CheckCircle, label: 'Extracted', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+  failed: { icon: WarningCircle, label: 'Failed', className: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },
+  needs_review: { icon: WarningCircle, label: 'Needs Review', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
 };
 
 interface EbitdaAddback {

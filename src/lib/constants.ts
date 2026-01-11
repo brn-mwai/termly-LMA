@@ -22,18 +22,18 @@ export const COVENANT_TYPES = [
 ] as const;
 
 export const LOAN_STATUS = [
-  { value: 'active', label: 'Active', color: 'bg-green-100 text-green-800' },
-  { value: 'watchlist', label: 'Watchlist', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'default', label: 'Default', color: 'bg-red-100 text-red-800' },
-  { value: 'closed', label: 'Closed', color: 'bg-gray-100 text-gray-800' },
+  { value: 'active', label: 'Active', color: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+  { value: 'watchlist', label: 'Watchlist', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
+  { value: 'default', label: 'Default', color: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },
+  { value: 'closed', label: 'Closed', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
 ] as const;
 
 export const COVENANT_STATUS = [
-  { value: 'compliant', label: 'Compliant', color: 'bg-green-100 text-green-800' },
-  { value: 'warning', label: 'Warning', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'breach', label: 'Breach', color: 'bg-red-100 text-red-800' },
-  { value: 'waived', label: 'Waived', color: 'bg-purple-100 text-purple-800' },
-  { value: 'pending', label: 'Pending', color: 'bg-gray-100 text-gray-800' },
+  { value: 'compliant', label: 'Compliant', color: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+  { value: 'warning', label: 'Warning', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
+  { value: 'breach', label: 'Breach', color: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },
+  { value: 'waived', label: 'Waived', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
+  { value: 'pending', label: 'Pending', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
 ] as const;
 
 export const DOCUMENT_TYPES = [
@@ -45,29 +45,31 @@ export const DOCUMENT_TYPES = [
 ] as const;
 
 export const ALERT_SEVERITY = [
-  { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800' },
-  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-800' },
+  { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },
+  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300' },
+  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
+  { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
 ] as const;
 
 export const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'bg-red-100 text-red-800',
-  high: 'bg-orange-100 text-orange-800',
-  medium: 'bg-yellow-100 text-yellow-800',
-  low: 'bg-blue-100 text-blue-800',
+  critical: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
+  medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+  low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+  warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+  info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  compliant: 'bg-green-100 text-green-800',
-  warning: 'bg-yellow-100 text-yellow-800',
-  breach: 'bg-red-100 text-red-800',
-  waived: 'bg-purple-100 text-purple-800',
-  pending: 'bg-gray-100 text-gray-800',
-  active: 'bg-green-100 text-green-800',
-  watchlist: 'bg-yellow-100 text-yellow-800',
-  default: 'bg-red-100 text-red-800',
-  closed: 'bg-gray-100 text-gray-800',
+  compliant: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+  breach: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  waived: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
+  pending: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+  active: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  watchlist: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+  default: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  closed: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
 };
 
 export const INDUSTRIES = [

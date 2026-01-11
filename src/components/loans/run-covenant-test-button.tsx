@@ -75,13 +75,13 @@ export function RunCovenantTestButton({ loanId }: RunCovenantTestButtonProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "compliant":
-        return "text-green-600 bg-green-50";
+        return "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-950/50";
       case "warning":
-        return "text-yellow-600 bg-yellow-50";
+        return "text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-950/50";
       case "breach":
-        return "text-red-600 bg-red-50";
+        return "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/50";
       default:
-        return "text-gray-600 bg-gray-50";
+        return "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-900/50";
     }
   };
 
@@ -98,7 +98,7 @@ export function RunCovenantTestButton({ loanId }: RunCovenantTestButtonProps) {
 
       {/* Error Toast */}
       {error && (
-        <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-red-100 text-red-800 p-4 shadow-lg max-w-md">
+        <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 p-4 shadow-lg max-w-md">
           <div className="flex items-center gap-2">
             <WarningCircle className="h-5 w-5" />
             <p className="font-medium">Test Failed</p>
@@ -143,10 +143,10 @@ export function RunCovenantTestButton({ loanId }: RunCovenantTestButtonProps) {
                   <span
                     className={`px-2 py-1 rounded text-xs font-semibold uppercase ${
                       result.status === "compliant"
-                        ? "bg-green-200 text-green-800"
+                        ? "bg-green-200 text-green-800 dark:bg-green-900/50 dark:text-green-300"
                         : result.status === "warning"
-                        ? "bg-yellow-200 text-yellow-800"
-                        : "bg-red-200 text-red-800"
+                        ? "bg-yellow-200 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300"
+                        : "bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-300"
                     }`}
                   >
                     {result.status}
