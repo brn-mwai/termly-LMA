@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './landing.module.css';
 import { VideoPopup } from './video-popup';
 
@@ -53,8 +54,19 @@ export function HeroSection() {
             Watch Demo
           </button>
         </div>
+      </div>
 
-        </div>
+      {/* Hero Image */}
+      <div className={styles.heroImageContainer}>
+        <Image
+          src="/Hero section image.png"
+          alt="Termly dashboard showing loan covenant monitoring"
+          width={1200}
+          height={675}
+          className={styles.heroImage}
+          priority
+        />
+      </div>
 
       <VideoPopup isOpen={isVideoOpen} onClose={closeVideo} />
     </section>

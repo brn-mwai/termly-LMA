@@ -422,6 +422,20 @@
   margin-bottom: 2rem;
 }
 
+/* Hero Image */
+.heroImageContainer {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.heroImage {
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
 .heroChecks {
   display: flex;
   justify-content: center;
@@ -1175,6 +1189,15 @@
   .heroBadge {
     font-size: 0.8125rem;
     padding: 0.375rem 0.75rem;
+  }
+
+  /* Hero Image */
+  .heroImageContainer {
+    padding: 0 1rem;
+  }
+
+  .heroImage {
+    border-radius: 0.5rem;
   }
 
   /* Preview */
