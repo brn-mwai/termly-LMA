@@ -10,7 +10,7 @@ import {
   YAxis,
   Cell,
 } from "recharts";
-import { chartColors, chartTheme, statusColors } from "./chart-config";
+import { useChartTheme, statusColors } from "./use-chart-theme";
 
 interface BarChartProps<T extends Record<string, unknown>> {
   data: T[];
@@ -32,7 +32,7 @@ export function BarChart<T extends Record<string, unknown>>({
   xKey,
   yKey,
   height = 300,
-  color = chartColors.chart1,
+  color,
   showGrid = true,
   showAxis = true,
   colorByStatus = false,
@@ -41,12 +41,15 @@ export function BarChart<T extends Record<string, unknown>>({
   formatYAxis,
   formatTooltip,
 }: BarChartProps<T>) {
+  const theme = useChartTheme();
+  const chartColor = color || theme.colors.chart1;
+
   const getBarColor = (entry: T) => {
     if (colorByStatus && statusKey) {
       const status = entry[statusKey] as keyof typeof statusColors;
-      return statusColors[status] || color;
+      return statusColors[status] || chartColor;
     }
-    return color;
+    return chartColor;
   };
 
   return (
@@ -54,8 +57,8 @@ export function BarChart<T extends Record<string, unknown>>({
       <RechartsBarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         {showGrid && (
           <CartesianGrid
-            strokeDasharray={chartTheme.grid.strokeDasharray}
-            stroke={chartTheme.grid.stroke}
+            strokeDasharray={theme.grid.strokeDasharray}
+            stroke={theme.grid.stroke}
             vertical={false}
           />
         )}
@@ -65,13 +68,13 @@ export function BarChart<T extends Record<string, unknown>>({
               dataKey={String(xKey)}
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: chartTheme.fontSize, fill: chartColors.muted }}
+              tick={{ fontSize: theme.fontSize, fill: theme.axis.tickFill }}
               tickFormatter={formatXAxis}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: chartTheme.fontSize, fill: chartColors.muted }}
+              tick={{ fontSize: theme.fontSize, fill: theme.axis.tickFill }}
               tickFormatter={formatYAxis}
               width={60}
             />
@@ -79,17 +82,17 @@ export function BarChart<T extends Record<string, unknown>>({
         )}
         <Tooltip
           contentStyle={{
-            backgroundColor: chartTheme.tooltip.background,
-            border: `1px solid ${chartTheme.tooltip.border}`,
-            borderRadius: chartTheme.tooltip.borderRadius,
-            fontSize: chartTheme.fontSize,
-            color: chartTheme.tooltip.text,
+            backgroundColor: theme.tooltip.background,
+            border: `1px solid ${theme.tooltip.border}`,
+            borderRadius: theme.tooltip.borderRadius,
+            fontSize: theme.fontSize,
+            color: theme.tooltip.text,
           }}
           formatter={(value) => [
             formatTooltip ? formatTooltip(value as number) : value,
             String(yKey),
           ]}
-          cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
+          cursor={{ fill: theme.colors.muted, opacity: 0.1 }}
         />
         <Bar dataKey={String(yKey)} radius={[4, 4, 0, 0]}>
           {data.map((entry, index) => (
@@ -122,13 +125,15 @@ export function StackedBarChart<T extends Record<string, unknown>>({
   formatXAxis,
   formatYAxis,
 }: StackedBarChartProps<T>) {
+  const theme = useChartTheme();
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RechartsBarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         {showGrid && (
           <CartesianGrid
-            strokeDasharray={chartTheme.grid.strokeDasharray}
-            stroke={chartTheme.grid.stroke}
+            strokeDasharray={theme.grid.strokeDasharray}
+            stroke={theme.grid.stroke}
             vertical={false}
           />
         )}
@@ -138,13 +143,13 @@ export function StackedBarChart<T extends Record<string, unknown>>({
               dataKey={String(xKey)}
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: chartTheme.fontSize, fill: chartColors.muted }}
+              tick={{ fontSize: theme.fontSize, fill: theme.axis.tickFill }}
               tickFormatter={formatXAxis}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: chartTheme.fontSize, fill: chartColors.muted }}
+              tick={{ fontSize: theme.fontSize, fill: theme.axis.tickFill }}
               tickFormatter={formatYAxis}
               width={60}
             />
@@ -152,13 +157,13 @@ export function StackedBarChart<T extends Record<string, unknown>>({
         )}
         <Tooltip
           contentStyle={{
-            backgroundColor: chartTheme.tooltip.background,
-            border: `1px solid ${chartTheme.tooltip.border}`,
-            borderRadius: chartTheme.tooltip.borderRadius,
-            fontSize: chartTheme.fontSize,
-            color: chartTheme.tooltip.text,
+            backgroundColor: theme.tooltip.background,
+            border: `1px solid ${theme.tooltip.border}`,
+            borderRadius: theme.tooltip.borderRadius,
+            fontSize: theme.fontSize,
+            color: theme.tooltip.text,
           }}
-          cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
+          cursor={{ fill: theme.colors.muted, opacity: 0.1 }}
         />
         {bars.map((bar) => (
           <Bar

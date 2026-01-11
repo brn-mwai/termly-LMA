@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { chartColors, chartTheme } from "./chart-config";
+import { useChartTheme } from "./use-chart-theme";
 
 interface AreaChartProps<T extends Record<string, unknown>> {
   data: T[];
@@ -30,7 +30,7 @@ export function AreaChart<T extends Record<string, unknown>>({
   xKey,
   yKey,
   height = 300,
-  color = chartColors.chart1,
+  color,
   gradient = true,
   showGrid = true,
   showAxis = true,
@@ -38,6 +38,8 @@ export function AreaChart<T extends Record<string, unknown>>({
   formatYAxis,
   formatTooltip,
 }: AreaChartProps<T>) {
+  const theme = useChartTheme();
+  const chartColor = color || theme.colors.chart1;
   const gradientId = `gradient-${String(yKey)}`;
 
   return (
@@ -46,15 +48,15 @@ export function AreaChart<T extends Record<string, unknown>>({
         {gradient && (
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={color} stopOpacity={0} />
+              <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
             </linearGradient>
           </defs>
         )}
         {showGrid && (
           <CartesianGrid
-            strokeDasharray={chartTheme.grid.strokeDasharray}
-            stroke={chartTheme.grid.stroke}
+            strokeDasharray={theme.grid.strokeDasharray}
+            stroke={theme.grid.stroke}
             vertical={false}
           />
         )}
@@ -64,13 +66,13 @@ export function AreaChart<T extends Record<string, unknown>>({
               dataKey={String(xKey)}
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: chartTheme.fontSize, fill: chartColors.muted }}
+              tick={{ fontSize: theme.fontSize, fill: theme.axis.tickFill }}
               tickFormatter={formatXAxis}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: chartTheme.fontSize, fill: chartColors.muted }}
+              tick={{ fontSize: theme.fontSize, fill: theme.axis.tickFill }}
               tickFormatter={formatYAxis}
               width={60}
             />
@@ -78,11 +80,11 @@ export function AreaChart<T extends Record<string, unknown>>({
         )}
         <Tooltip
           contentStyle={{
-            backgroundColor: chartTheme.tooltip.background,
-            border: `1px solid ${chartTheme.tooltip.border}`,
-            borderRadius: chartTheme.tooltip.borderRadius,
-            fontSize: chartTheme.fontSize,
-            color: chartTheme.tooltip.text,
+            backgroundColor: theme.tooltip.background,
+            border: `1px solid ${theme.tooltip.border}`,
+            borderRadius: theme.tooltip.borderRadius,
+            fontSize: theme.fontSize,
+            color: theme.tooltip.text,
           }}
           formatter={(value) => [
             formatTooltip ? formatTooltip(value as number) : value,
@@ -92,9 +94,9 @@ export function AreaChart<T extends Record<string, unknown>>({
         <Area
           type="monotone"
           dataKey={String(yKey)}
-          stroke={color}
+          stroke={chartColor}
           strokeWidth={2}
-          fill={gradient ? `url(#${gradientId})` : color}
+          fill={gradient ? `url(#${gradientId})` : chartColor}
           fillOpacity={gradient ? 1 : 0.1}
         />
       </RechartsAreaChart>

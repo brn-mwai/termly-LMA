@@ -7,7 +7,7 @@ import {
   LineChart,
   ResponsiveContainer,
 } from "recharts";
-import { chartColors } from "./chart-config";
+import { useChartTheme } from "./use-chart-theme";
 
 interface SparklineProps {
   data: number[];
@@ -22,26 +22,29 @@ export function Sparkline({
   data,
   height = 32,
   width = 80,
-  color = chartColors.chart1,
+  color,
   type = "line",
   showPositiveNegative = false,
 }: SparklineProps) {
+  const theme = useChartTheme();
+
   // Convert simple number array to chart data format
   const chartData = data.map((value, index) => ({ index, value }));
 
   // Determine color based on trend (first vs last value)
+  const defaultColor = color || theme.colors.chart1;
   const trendColor = showPositiveNegative
     ? data[data.length - 1] >= data[0]
-      ? chartColors.compliant
-      : chartColors.breach
-    : color;
+      ? theme.colors.compliant
+      : theme.colors.breach
+    : defaultColor;
 
   if (type === "area") {
     return (
       <ResponsiveContainer width={width} height={height}>
         <AreaChart data={chartData} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
           <defs>
-            <linearGradient id={`sparkline-gradient-${color}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={`sparkline-gradient-${trendColor}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={trendColor} stopOpacity={0.3} />
               <stop offset="95%" stopColor={trendColor} stopOpacity={0} />
             </linearGradient>
@@ -51,7 +54,7 @@ export function Sparkline({
             dataKey="value"
             stroke={trendColor}
             strokeWidth={1.5}
-            fill={`url(#sparkline-gradient-${color})`}
+            fill={`url(#sparkline-gradient-${trendColor})`}
             isAnimationActive={false}
           />
         </AreaChart>

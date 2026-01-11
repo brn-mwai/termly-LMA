@@ -10,7 +10,7 @@ import {
   YAxis,
   Legend,
 } from "recharts";
-import { chartColors, chartTheme } from "./chart-config";
+import { useChartTheme } from "./use-chart-theme";
 
 interface LineChartProps<T extends Record<string, unknown>> {
   data: T[];
@@ -35,13 +35,15 @@ export function LineChart<T extends Record<string, unknown>>({
   formatXAxis,
   formatYAxis,
 }: LineChartProps<T>) {
+  const theme = useChartTheme();
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RechartsLineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         {showGrid && (
           <CartesianGrid
-            strokeDasharray={chartTheme.grid.strokeDasharray}
-            stroke={chartTheme.grid.stroke}
+            strokeDasharray={theme.grid.strokeDasharray}
+            stroke={theme.grid.stroke}
             vertical={false}
           />
         )}
@@ -51,13 +53,13 @@ export function LineChart<T extends Record<string, unknown>>({
               dataKey={String(xKey)}
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: chartTheme.fontSize, fill: chartColors.muted }}
+              tick={{ fontSize: theme.fontSize, fill: theme.axis.tickFill }}
               tickFormatter={formatXAxis}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: chartTheme.fontSize, fill: chartColors.muted }}
+              tick={{ fontSize: theme.fontSize, fill: theme.axis.tickFill }}
               tickFormatter={formatYAxis}
               width={60}
             />
@@ -65,18 +67,18 @@ export function LineChart<T extends Record<string, unknown>>({
         )}
         <Tooltip
           contentStyle={{
-            backgroundColor: chartTheme.tooltip.background,
-            border: `1px solid ${chartTheme.tooltip.border}`,
-            borderRadius: chartTheme.tooltip.borderRadius,
-            fontSize: chartTheme.fontSize,
-            color: chartTheme.tooltip.text,
+            backgroundColor: theme.tooltip.background,
+            border: `1px solid ${theme.tooltip.border}`,
+            borderRadius: theme.tooltip.borderRadius,
+            fontSize: theme.fontSize,
+            color: theme.tooltip.text,
           }}
-          cursor={{ stroke: chartColors.muted, strokeDasharray: "3 3" }}
+          cursor={{ stroke: theme.colors.muted, strokeDasharray: "3 3" }}
         />
         {showLegend && (
           <Legend
             iconType="line"
-            wrapperStyle={{ fontSize: chartTheme.fontSize, color: chartColors.muted }}
+            wrapperStyle={{ fontSize: theme.fontSize, color: theme.colors.muted }}
           />
         )}
         {lines.map((line) => (

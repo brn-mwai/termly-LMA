@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AreaChart } from "@/components/charts/area-chart";
-import { chartColors } from "@/components/charts/chart-config";
 import { chartAnimation } from "@/lib/animations";
 import { ChartLine, SpinnerGap } from "@phosphor-icons/react";
 
@@ -100,7 +99,6 @@ export function PortfolioChart({ currentValue = 0 }: PortfolioChartProps) {
               xKey="date"
               yKey="value"
               height={220}
-              color={chartColors.chart1}
               formatYAxis={formatCurrency}
               formatTooltip={formatCurrency}
             />

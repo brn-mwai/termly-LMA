@@ -8,7 +8,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { chartColors, chartTheme, statusColors } from "./chart-config";
+import { useChartTheme, statusColors } from "./use-chart-theme";
 
 interface PieChartData {
   name: string;
@@ -29,14 +29,6 @@ interface PieChartProps {
   formatValue?: (value: number) => string;
 }
 
-const defaultColors = [
-  chartColors.chart1,
-  chartColors.chart2,
-  chartColors.chart3,
-  chartColors.chart4,
-  chartColors.chart5,
-];
-
 export function PieChart({
   data,
   height = 300,
@@ -44,13 +36,23 @@ export function PieChart({
   outerRadius = 80,
   showLegend = true,
   showLabels = false,
-  colors = defaultColors,
+  colors,
   formatValue,
 }: PieChartProps) {
+  const theme = useChartTheme();
+
+  const defaultColors = colors || [
+    theme.colors.chart1,
+    theme.colors.chart2,
+    theme.colors.chart3,
+    theme.colors.chart4,
+    theme.colors.chart5,
+  ];
+
   const getColor = (entry: PieChartData, index: number) => {
     if (entry.color) return entry.color;
     if (entry.status) return statusColors[entry.status];
-    return colors[index % colors.length];
+    return defaultColors[index % defaultColors.length];
   };
 
   return (
@@ -77,11 +79,11 @@ export function PieChart({
         </Pie>
         <Tooltip
           contentStyle={{
-            backgroundColor: chartTheme.tooltip.background,
-            border: `1px solid ${chartTheme.tooltip.border}`,
-            borderRadius: chartTheme.tooltip.borderRadius,
-            fontSize: chartTheme.fontSize,
-            color: chartTheme.tooltip.text,
+            backgroundColor: theme.tooltip.background,
+            border: `1px solid ${theme.tooltip.border}`,
+            borderRadius: theme.tooltip.borderRadius,
+            fontSize: theme.fontSize,
+            color: theme.tooltip.text,
           }}
           formatter={(value) => [
             formatValue ? formatValue(value as number) : value,
@@ -93,7 +95,7 @@ export function PieChart({
             align="right"
             verticalAlign="middle"
             iconType="circle"
-            wrapperStyle={{ fontSize: chartTheme.fontSize, color: chartColors.muted }}
+            wrapperStyle={{ fontSize: theme.fontSize, color: theme.colors.muted }}
           />
         )}
       </RechartsPieChart>

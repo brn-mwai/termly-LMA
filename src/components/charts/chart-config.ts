@@ -1,43 +1,42 @@
-// Chart theme configuration using CSS variables from globals.css
-// These CSS variables automatically adapt to light/dark mode
+// Chart theme configuration
+// This file re-exports from use-chart-theme for backwards compatibility
+// For dynamic theme-aware colors, use the useChartTheme hook directly
 
+export { statusColors } from "./use-chart-theme";
+
+// Static colors for use in non-hook contexts (e.g., server components)
+// Note: For proper dark mode support in client components, use useChartTheme hook
 export const chartColors = {
-  primary: "hsl(var(--primary))",
-  foreground: "hsl(var(--foreground))",
-  chart1: "hsl(var(--chart-1))", // Uses theme chart colors
-  chart2: "hsl(var(--chart-2))",
-  chart3: "hsl(var(--chart-3))",
-  chart4: "hsl(var(--chart-4))",
-  chart5: "hsl(var(--chart-5))",
+  primary: "#17A417",
+  chart1: "#17A417", // Termly green
+  chart2: "#0d9488", // Teal
+  chart3: "#3b82f6", // Blue
+  chart4: "#84cc16", // Lime
+  chart5: "#eab308", // Yellow
   compliant: "#22c55e",
   warning: "#f59e0b",
   breach: "#ef4444",
   info: "#3b82f6",
-  muted: "hsl(var(--muted-foreground))",
+  muted: "#71717a",
 } as const;
 
+// Static theme for backwards compatibility
+// For proper dark mode support, use useChartTheme hook
 export const chartTheme = {
   fontSize: 12,
   fontFamily: "var(--font-sans)",
   axis: {
-    stroke: "hsl(var(--border))",
+    stroke: "#e4e4e7",
     tickSize: 0,
   },
   grid: {
-    stroke: "hsl(var(--border))",
+    stroke: "#e4e4e7",
     strokeDasharray: "3 3",
   },
   tooltip: {
-    background: "hsl(var(--popover))",
-    border: "hsl(var(--border))",
-    text: "hsl(var(--popover-foreground))",
+    background: "#ffffff",
+    border: "#e4e4e7",
+    text: "#18181b",
     borderRadius: 8,
   },
-} as const;
-
-export const statusColors = {
-  compliant: chartColors.compliant,
-  warning: chartColors.warning,
-  breach: chartColors.breach,
-  pending: chartColors.muted,
 } as const;
