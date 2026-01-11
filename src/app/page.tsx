@@ -6,7 +6,6 @@ import {
   Header,
   MobileNav,
   HeroSection,
-  PreviewSection,
   AudienceSection,
   FeaturesSection,
   HowItWorksSection,
@@ -28,7 +27,6 @@ export default function LandingPage() {
         onClose={() => setMobileMenuOpen(false)}
       />
       <HeroSection />
-      <PreviewSection />
       <AudienceSection />
       <FeaturesSection />
       <HowItWorksSection />

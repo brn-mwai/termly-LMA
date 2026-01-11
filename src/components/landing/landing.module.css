@@ -424,16 +424,16 @@
 
 /* Hero Image */
 .heroImageContainer {
-  max-width: 72rem;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem 4rem;
 }
 
 .heroImage {
   width: 100%;
   height: auto;
-  border-radius: 0.75rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  display: block;
 }
 
 .heroChecks {

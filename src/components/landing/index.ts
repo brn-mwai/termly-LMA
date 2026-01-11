@@ -3,7 +3,6 @@ export { Banner } from "./banner";
 export { Header } from "./header";
 export { MobileNav } from "./mobile-nav";
 export { HeroSection } from "./hero-section";
-export { PreviewSection } from "./preview-section";
 export { AudienceSection } from "./audience-section";
 export { FeaturesSection } from "./features-section";
 export { FeatureCard } from "./feature-card";
