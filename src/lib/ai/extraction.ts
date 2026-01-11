@@ -70,8 +70,8 @@ async function extractionCall(prompt: string, maxTokens: number = 3000): Promise
 export const EBITDAAddbackSchema = z.object({
   category: z.string(),
   description: z.string(),
-  cap: z.string().nullish(), // Allow null or undefined
-  confidence: z.number().min(0).max(1),
+  cap: z.string().nullish(),
+  confidence: z.number().min(0).max(1).default(0.5),
 });
 
 export const CovenantExtractionSchema = z.object({
@@ -95,9 +95,9 @@ export const CovenantExtractionSchema = z.object({
     )
     .nullish(), // Allow null or undefined
   testingFrequency: z.string(),
-  gracePeriodDays: z.number().nullish(), // Allow null or undefined
+  gracePeriodDays: z.number().nullish(),
   sourceClause: z.string(),
-  confidence: z.number().min(0).max(1),
+  confidence: z.number().min(0).max(1).default(0.5),
 });
 
 export const FinancialDataSchema = z.object({
@@ -111,7 +111,7 @@ export const FinancialDataSchema = z.object({
   currentAssets: z.number().nullish(),
   currentLiabilities: z.number().nullish(),
   netWorth: z.number().nullish(),
-  confidence: z.number().min(0).max(1),
+  confidence: z.number().min(0).max(1).default(0.5),
 });
 
 export const ExtractionResultSchema = z.object({
@@ -122,14 +122,14 @@ export const ExtractionResultSchema = z.object({
     "amendment",
     "other",
   ]),
-  borrowerName: z.string().optional(),
-  facilityName: z.string().optional(),
-  ebitdaDefinition: z.string().optional(),
-  ebitdaAddbacks: z.array(EBITDAAddbackSchema).optional(),
-  covenants: z.array(CovenantExtractionSchema).optional(),
-  financialData: z.array(FinancialDataSchema).optional(),
+  borrowerName: z.string().nullish(),
+  facilityName: z.string().nullish(),
+  ebitdaDefinition: z.string().nullish(),
+  ebitdaAddbacks: z.array(EBITDAAddbackSchema).nullish(),
+  covenants: z.array(CovenantExtractionSchema).nullish(),
+  financialData: z.array(FinancialDataSchema).nullish(),
   overallConfidence: z.number().min(0).max(1),
-  extractionNotes: z.array(z.string()).optional(),
+  extractionNotes: z.array(z.string()).nullish(),
 });
 
 export type ExtractionResult = z.infer<typeof ExtractionResultSchema>;
