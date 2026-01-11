@@ -81,6 +81,7 @@ export function PieChart({
             border: `1px solid ${chartTheme.tooltip.border}`,
             borderRadius: chartTheme.tooltip.borderRadius,
             fontSize: chartTheme.fontSize,
+            color: chartTheme.tooltip.text,
           }}
           formatter={(value) => [
             formatValue ? formatValue(value as number) : value,
@@ -92,7 +93,7 @@ export function PieChart({
             align="right"
             verticalAlign="middle"
             iconType="circle"
-            wrapperStyle={{ fontSize: chartTheme.fontSize }}
+            wrapperStyle={{ fontSize: chartTheme.fontSize, color: chartColors.muted }}
           />
         )}
       </RechartsPieChart>

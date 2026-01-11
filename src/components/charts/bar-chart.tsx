@@ -83,6 +83,7 @@ export function BarChart<T extends Record<string, unknown>>({
             border: `1px solid ${chartTheme.tooltip.border}`,
             borderRadius: chartTheme.tooltip.borderRadius,
             fontSize: chartTheme.fontSize,
+            color: chartTheme.tooltip.text,
           }}
           formatter={(value) => [
             formatTooltip ? formatTooltip(value as number) : value,
@@ -155,6 +156,7 @@ export function StackedBarChart<T extends Record<string, unknown>>({
             border: `1px solid ${chartTheme.tooltip.border}`,
             borderRadius: chartTheme.tooltip.borderRadius,
             fontSize: chartTheme.fontSize,
+            color: chartTheme.tooltip.text,
           }}
           cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
         />

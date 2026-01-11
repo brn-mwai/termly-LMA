@@ -1,12 +1,14 @@
 // Chart theme configuration using CSS variables from globals.css
+// These CSS variables automatically adapt to light/dark mode
 
 export const chartColors = {
   primary: "hsl(var(--primary))",
-  chart1: "hsl(142 60% 45%)", // Termly green
-  chart2: "hsl(185 50% 50%)", // Teal
-  chart3: "hsl(227 30% 40%)", // Dark blue
-  chart4: "hsl(84 60% 55%)",  // Yellow-green
-  chart5: "hsl(70 60% 55%)",  // Yellow
+  foreground: "hsl(var(--foreground))",
+  chart1: "hsl(var(--chart-1))", // Uses theme chart colors
+  chart2: "hsl(var(--chart-2))",
+  chart3: "hsl(var(--chart-3))",
+  chart4: "hsl(var(--chart-4))",
+  chart5: "hsl(var(--chart-5))",
   compliant: "#22c55e",
   warning: "#f59e0b",
   breach: "#ef4444",

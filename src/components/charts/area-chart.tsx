@@ -82,6 +82,7 @@ export function AreaChart<T extends Record<string, unknown>>({
             border: `1px solid ${chartTheme.tooltip.border}`,
             borderRadius: chartTheme.tooltip.borderRadius,
             fontSize: chartTheme.fontSize,
+            color: chartTheme.tooltip.text,
           }}
           formatter={(value) => [
             formatTooltip ? formatTooltip(value as number) : value,

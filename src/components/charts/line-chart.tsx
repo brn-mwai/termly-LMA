@@ -69,13 +69,14 @@ export function LineChart<T extends Record<string, unknown>>({
             border: `1px solid ${chartTheme.tooltip.border}`,
             borderRadius: chartTheme.tooltip.borderRadius,
             fontSize: chartTheme.fontSize,
+            color: chartTheme.tooltip.text,
           }}
           cursor={{ stroke: chartColors.muted, strokeDasharray: "3 3" }}
         />
         {showLegend && (
           <Legend
             iconType="line"
-            wrapperStyle={{ fontSize: chartTheme.fontSize }}
+            wrapperStyle={{ fontSize: chartTheme.fontSize, color: chartColors.muted }}
           />
         )}
         {lines.map((line) => (
