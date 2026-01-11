@@ -26,15 +26,27 @@ function UploadDocumentContent() {
   const [loanId, setLoanId] = useState(preselectedLoanId || '');
   const [documentType, setDocumentType] = useState('');
   const [loans, setLoans] = useState<any[]>([]);
+  const [loansLoading, setLoansLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     // Fetch loans for dropdown
+    setLoansLoading(true);
     fetch('/api/loans')
-      .then((res) => res.json())
-      .then((data) => setLoans(data.data || []))
-      .catch(() => setLoans([]));
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch loans');
+        return res.json();
+      })
+      .then((data) => {
+        console.log('Loans fetched:', data);
+        setLoans(data.data || []);
+      })
+      .catch((err) => {
+        console.error('Error fetching loans:', err);
+        setLoans([]);
+      })
+      .finally(() => setLoansLoading(false));
   }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -179,24 +191,32 @@ function UploadDocumentContent() {
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="loan">Select Loan *</Label>
-              <Select value={loanId} onValueChange={setLoanId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a loan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {loans.map((loan: any) => (
-                    <SelectItem key={loan.id} value={loan.id}>
-                      {loan.borrowers?.name} - {loan.name}
-                    </SelectItem>
-                  ))}
-                  {loans.length === 0 && (
-                    <SelectItem value="demo" disabled>
-                      No loans available
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="loan">Select Loan * {loans.length > 0 && <span className="text-xs text-muted-foreground">({loans.length} available)</span>}</Label>
+              {loansLoading ? (
+                <div className="flex items-center gap-2 h-9 px-3 py-2 border rounded-md">
+                  <CircleNotch className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Loading loans...</span>
+                </div>
+              ) : loans.length === 0 ? (
+                <div className="flex flex-col gap-2">
+                  <div className="h-9 px-3 py-2 border rounded-md text-sm text-muted-foreground">
+                    No loans available - <a href="/loans/new" className="text-primary underline">create one</a> or seed demo data
+                  </div>
+                </div>
+              ) : (
+                <Select value={loanId || undefined} onValueChange={(val) => { console.log('Selected loan:', val); setLoanId(val); }}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Select a loan" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="z-[100]">
+                    {loans.map((loan: any) => (
+                      <SelectItem key={loan.id} value={loan.id}>
+                        {loan.borrowers?.name || 'Unknown'} - {loan.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
