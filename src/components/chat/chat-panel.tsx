@@ -9,10 +9,12 @@ import { useChat } from './chat-context';
 import { useSidebar } from '@/components/ui/sidebar';
 import ReactMarkdown from 'react-markdown';
 import { ThinkingIndicator } from './thinking-indicator';
+import { ActionSteps, ActionStep } from './action-steps';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  actions?: ActionStep[];
 }
 
 const SUGGESTIONS = [
@@ -127,7 +129,11 @@ export function ChatPanel() {
       if (!res.ok) throw new Error('Chat failed');
 
       const { data } = await res.json();
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
+        content: data.message,
+        actions: data.actions || [],
+      }]);
       // Track chat mode for UI indicator
       if (data.mode) {
         setChatMode(data.mode);
@@ -379,15 +385,24 @@ export function ChatPanel() {
               >
                 <div
                   className={cn(
-                    'max-w-[90%] rounded-2xl px-3 py-2',
+                    'max-w-[90%]',
                     msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-md'
-                      : 'bg-muted rounded-bl-md'
+                      ? 'rounded-2xl px-3 py-2 bg-primary text-primary-foreground rounded-br-md'
+                      : ''
                   )}
                 >
                   {msg.role === 'assistant' ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-background/50 [&_pre]:p-2 [&_pre]:rounded-lg [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-medium [&_h2]:font-medium [&_h3]:font-medium">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <div className="flex flex-col">
+                      {/* Show action steps if any */}
+                      {msg.actions && msg.actions.length > 0 && (
+                        <ActionSteps actions={msg.actions} />
+                      )}
+                      {/* Message content */}
+                      <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2">
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-background/50 [&_pre]:p-2 [&_pre]:rounded-lg [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-medium [&_h2]:font-medium [&_h3]:font-medium">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <p className="whitespace-pre-wrap text-sm leading-relaxed">

@@ -224,6 +224,14 @@ export async function chatGroq(
   return chatWithGroq(messages, taskType);
 }
 
+export interface ToolExecution {
+  name: string;
+  input: Record<string, unknown>;
+  result: string;
+  success: boolean;
+  timestamp: number;
+}
+
 /**
  * Agent chat with tool use support (Claude).
  * Handles the full agentic loop with tool execution.
@@ -234,7 +242,7 @@ export async function agentChat(
   history: ChatMessage[],
   tools: Anthropic.Tool[],
   executeToolFn: (name: string, input: Record<string, unknown>) => Promise<string>
-): Promise<{ message: string; usage: { promptTokens: number; completionTokens: number } }> {
+): Promise<{ message: string; usage: { promptTokens: number; completionTokens: number }; toolExecutions: ToolExecution[] }> {
   const client = getAnthropicClient();
   if (!client) {
     throw new Error('Anthropic client required for agent mode');
@@ -255,6 +263,7 @@ export async function agentChat(
   });
 
   const totalUsage = { promptTokens: 0, completionTokens: 0 };
+  const toolExecutions: ToolExecution[] = [];
   let iterations = 0;
   const maxIterations = 5;
 
@@ -283,7 +292,7 @@ export async function agentChat(
     // If no tool calls, return the text response
     if (toolUseBlocks.length === 0 || response.stop_reason === 'end_turn') {
       const finalText = textBlocks.map(b => b.text).join('\n');
-      return { message: finalText, usage: totalUsage };
+      return { message: finalText, usage: totalUsage, toolExecutions };
     }
 
     // Add assistant's response (with tool use) to history
@@ -296,8 +305,16 @@ export async function agentChat(
     const toolResults: Anthropic.ToolResultBlockParam[] = [];
     for (const toolUse of toolUseBlocks) {
       console.log(`[Monty] Executing tool: ${toolUse.name}`, toolUse.input);
+      const startTime = Date.now();
       try {
         const result = await executeToolFn(toolUse.name, toolUse.input as Record<string, unknown>);
+        toolExecutions.push({
+          name: toolUse.name,
+          input: toolUse.input as Record<string, unknown>,
+          result,
+          success: true,
+          timestamp: startTime,
+        });
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,
@@ -305,10 +322,18 @@ export async function agentChat(
         });
       } catch (error) {
         console.error(`[Monty] Tool ${toolUse.name} failed:`, error);
+        const errorMsg = `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        toolExecutions.push({
+          name: toolUse.name,
+          input: toolUse.input as Record<string, unknown>,
+          result: errorMsg,
+          success: false,
+          timestamp: startTime,
+        });
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,
-          content: JSON.stringify({ error: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}` }),
+          content: JSON.stringify({ error: errorMsg }),
           is_error: true,
         });
       }
@@ -325,6 +350,7 @@ export async function agentChat(
   return {
     message: "I'm having trouble completing this request. Please try simplifying your question.",
     usage: totalUsage,
+    toolExecutions,
   };
 }
 

@@ -295,6 +295,201 @@ export const MONTY_TOOLS = [
       required: [],
     },
   },
+  // ===== AGENTIC ACTION TOOLS =====
+  {
+    name: 'create_loan',
+    description: 'Create a new loan in the portfolio. Requires borrower_id and loan name.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name of the loan/facility' },
+        borrower_id: { type: 'string', description: 'ID of the borrower' },
+        principal_amount: { type: 'number', description: 'Principal/commitment amount' },
+        interest_rate: { type: 'number', description: 'Interest rate (e.g., 0.05 for 5%)' },
+        maturity_date: { type: 'string', description: 'Maturity date (YYYY-MM-DD)' },
+        facility_type: { type: 'string', description: 'Type: term_loan, revolver, delayed_draw' },
+      },
+      required: ['name', 'borrower_id'],
+    },
+  },
+  {
+    name: 'update_loan',
+    description: 'Update an existing loan. Can update name, amounts, rates, status, dates.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        loan_id: { type: 'string', description: 'ID of the loan to update' },
+        name: { type: 'string', description: 'New name' },
+        principal_amount: { type: 'number', description: 'New principal amount' },
+        interest_rate: { type: 'number', description: 'New interest rate' },
+        status: { type: 'string', description: 'New status: active, matured, defaulted' },
+        maturity_date: { type: 'string', description: 'New maturity date' },
+      },
+      required: ['loan_id'],
+    },
+  },
+  {
+    name: 'create_borrower',
+    description: 'Create a new borrower in the system.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Borrower name' },
+        industry: { type: 'string', description: 'Industry sector' },
+        rating: { type: 'string', description: 'Credit rating (e.g., BBB+, BB-)' },
+        contact_email: { type: 'string', description: 'Contact email' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'update_borrower',
+    description: 'Update an existing borrower.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        borrower_id: { type: 'string', description: 'ID of borrower to update' },
+        name: { type: 'string', description: 'New name' },
+        industry: { type: 'string', description: 'New industry' },
+        rating: { type: 'string', description: 'New credit rating' },
+      },
+      required: ['borrower_id'],
+    },
+  },
+  {
+    name: 'create_covenant',
+    description: 'Create a new covenant for a loan.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        loan_id: { type: 'string', description: 'ID of the loan' },
+        name: { type: 'string', description: 'Covenant name (e.g., "Senior Leverage Ratio")' },
+        type: { type: 'string', description: 'Type: leverage, interest_coverage, fixed_charge_coverage, etc.' },
+        operator: { type: 'string', description: 'Operator: max or min' },
+        threshold: { type: 'number', description: 'Threshold value (e.g., 4.5 for 4.5x)' },
+        testing_frequency: { type: 'string', description: 'Frequency: quarterly, monthly, annually' },
+      },
+      required: ['loan_id', 'name', 'type', 'threshold'],
+    },
+  },
+  {
+    name: 'update_covenant',
+    description: 'Update an existing covenant threshold or other details.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        covenant_id: { type: 'string', description: 'ID of covenant to update' },
+        threshold: { type: 'number', description: 'New threshold' },
+        testing_frequency: { type: 'string', description: 'New frequency' },
+        name: { type: 'string', description: 'New name' },
+      },
+      required: ['covenant_id'],
+    },
+  },
+  {
+    name: 'record_covenant_test',
+    description: 'Record a new covenant test result with calculated value.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        covenant_id: { type: 'string', description: 'ID of the covenant' },
+        calculated_value: { type: 'number', description: 'The calculated ratio value' },
+        period_end_date: { type: 'string', description: 'Period end date (YYYY-MM-DD)' },
+        notes: { type: 'string', description: 'Optional notes about the test' },
+      },
+      required: ['covenant_id', 'calculated_value'],
+    },
+  },
+  {
+    name: 'create_covenant_waiver',
+    description: 'Create a waiver for a covenant that is in breach or expected to breach.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        covenant_id: { type: 'string', description: 'ID of the covenant' },
+        waiver_reason: { type: 'string', description: 'Reason for the waiver' },
+        waiver_end_date: { type: 'string', description: 'When the waiver expires (YYYY-MM-DD)' },
+      },
+      required: ['covenant_id', 'waiver_reason'],
+    },
+  },
+  {
+    name: 'dismiss_alert',
+    description: 'Dismiss an alert with a reason.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        alert_id: { type: 'string', description: 'ID of the alert' },
+        reason: { type: 'string', description: 'Reason for dismissing' },
+      },
+      required: ['alert_id'],
+    },
+  },
+  {
+    name: 'escalate_alert',
+    description: 'Escalate an alert to critical status.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        alert_id: { type: 'string', description: 'ID of the alert' },
+        escalation_reason: { type: 'string', description: 'Reason for escalation' },
+      },
+      required: ['alert_id'],
+    },
+  },
+  {
+    name: 'bulk_acknowledge_alerts',
+    description: 'Acknowledge multiple alerts at once.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        alert_ids: { type: 'array', items: { type: 'string' }, description: 'Array of alert IDs to acknowledge' },
+        notes: { type: 'string', description: 'Notes for acknowledgement' },
+      },
+      required: ['alert_ids'],
+    },
+  },
+  {
+    name: 'create_financial_period',
+    description: 'Record financial data for a period (quarterly/annual financials).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        loan_id: { type: 'string', description: 'ID of the loan' },
+        period_end_date: { type: 'string', description: 'Period end date (YYYY-MM-DD)' },
+        revenue: { type: 'number', description: 'Revenue for the period' },
+        ebitda: { type: 'number', description: 'EBITDA for the period' },
+        total_debt: { type: 'number', description: 'Total debt at period end' },
+        cash: { type: 'number', description: 'Cash at period end' },
+        interest_expense: { type: 'number', description: 'Interest expense for the period' },
+      },
+      required: ['loan_id', 'period_end_date'],
+    },
+  },
+  {
+    name: 'categorize_document',
+    description: 'Categorize a document by type.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        document_id: { type: 'string', description: 'ID of the document' },
+        category: { type: 'string', description: 'Category: credit_agreement, amendment, financial_statement, compliance_certificate' },
+      },
+      required: ['document_id', 'category'],
+    },
+  },
+  {
+    name: 'archive_document',
+    description: 'Archive a document that is no longer needed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        document_id: { type: 'string', description: 'ID of the document' },
+        reason: { type: 'string', description: 'Reason for archiving' },
+      },
+      required: ['document_id'],
+    },
+  },
 ] as const;
 
 // Tool execution functions
@@ -340,6 +535,35 @@ export async function executeTool(
         return await getAuditLog(supabase, organizationId, toolInput);
       case 'get_risk_scores':
         return await getRiskScores(supabase, organizationId, toolInput);
+      // ===== AGENTIC ACTION TOOLS =====
+      case 'create_loan':
+        return await executeAction('create_loan', toolInput);
+      case 'update_loan':
+        return await executeAction('update_loan', toolInput);
+      case 'create_borrower':
+        return await executeAction('create_borrower', toolInput);
+      case 'update_borrower':
+        return await executeAction('update_borrower', toolInput);
+      case 'create_covenant':
+        return await executeAction('create_covenant', toolInput);
+      case 'update_covenant':
+        return await executeAction('update_covenant', toolInput);
+      case 'record_covenant_test':
+        return await executeAction('create_covenant_test', toolInput);
+      case 'create_covenant_waiver':
+        return await executeAction('create_covenant_waiver', toolInput);
+      case 'dismiss_alert':
+        return await executeAction('dismiss_alert', toolInput);
+      case 'escalate_alert':
+        return await executeAction('escalate_alert', toolInput);
+      case 'bulk_acknowledge_alerts':
+        return await executeAction('bulk_acknowledge_alerts', toolInput);
+      case 'create_financial_period':
+        return await executeAction('create_financial_period', toolInput);
+      case 'categorize_document':
+        return await executeAction('categorize_document', toolInput);
+      case 'archive_document':
+        return await executeAction('archive_document', toolInput);
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
@@ -1701,3 +1925,32 @@ async function getRiskScores(
 
   return JSON.stringify({ riskScores, summary }, null, 2);
 }
+
+// ===== AGENTIC ACTION EXECUTOR =====
+// This function calls the /api/actions endpoint to perform write operations
+async function executeAction(
+  action: string,
+  params: Record<string, unknown>
+): Promise<string> {
+  try {
+    // The API call will be made from the chat route which has the auth context
+    // For now, return a formatted action request that the chat route will execute
+    return JSON.stringify({
+      __action_request: true,
+      action,
+      params,
+    });
+  } catch (error) {
+    return JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to execute action',
+    });
+  }
+}
+
+// Export for use in chat route
+export type ActionRequest = {
+  __action_request: true;
+  action: string;
+  params: Record<string, unknown>;
+};
