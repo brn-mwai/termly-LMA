@@ -490,6 +490,34 @@ export const MONTY_TOOLS = [
       required: ['document_id'],
     },
   },
+  {
+    name: 'get_memos',
+    description: 'Get a list of credit memos. Can filter by loan or search by title.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        loan_id: { type: 'string', description: 'Filter by loan ID' },
+        borrower_name: { type: 'string', description: 'Filter by borrower name' },
+        search: { type: 'string', description: 'Search memo titles' },
+        limit: { type: 'number', description: 'Maximum number of memos to return (default 10)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'create_memo',
+    description: 'Create a new credit memo for a loan. Can optionally generate content with AI.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        loan_id: { type: 'string', description: 'ID of the loan the memo is for' },
+        title: { type: 'string', description: 'Title of the memo' },
+        content: { type: 'string', description: 'Content of the memo (markdown supported)' },
+        generated_by_ai: { type: 'boolean', description: 'Whether this was AI-generated (default true)' },
+      },
+      required: ['loan_id', 'title', 'content'],
+    },
+  },
 ] as const;
 
 // Tool execution functions
@@ -564,6 +592,10 @@ export async function executeTool(
         return await executeAction('categorize_document', toolInput);
       case 'archive_document':
         return await executeAction('archive_document', toolInput);
+      case 'get_memos':
+        return await getMemos(supabase, organizationId, toolInput);
+      case 'create_memo':
+        return await executeAction('create_memo', toolInput);
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
@@ -1762,6 +1794,75 @@ function summarizeChanges(changes: Record<string, unknown>): string {
   if (keys.length === 0) return 'No changes';
   if (keys.length <= 3) return keys.join(', ');
   return `${keys.slice(0, 3).join(', ')} +${keys.length - 3} more`;
+}
+
+async function getMemos(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  let query = supabase
+    .from('memos')
+    .select(`
+      id,
+      title,
+      content,
+      generated_by_ai,
+      created_at,
+      loans (id, name, borrowers (name)),
+      users:created_by (full_name)
+    `)
+    .eq('organization_id', orgId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (input.loan_id) {
+    query = query.eq('loan_id', input.loan_id);
+  }
+
+  if (input.search) {
+    query = query.ilike('title', `%${input.search}%`);
+  }
+
+  const limit = typeof input.limit === 'number' ? input.limit : 10;
+  const { data, error } = await query.limit(limit);
+
+  if (error) {
+    return JSON.stringify({ error: error.message });
+  }
+
+  interface MemoWithRelations {
+    id: string;
+    title: string;
+    content: string;
+    generated_by_ai: boolean;
+    created_at: string;
+    loans?: { id: string; name: string; borrowers?: { name: string } };
+    users?: { full_name?: string };
+  }
+
+  let memos = (data || []) as unknown as MemoWithRelations[];
+
+  // Filter by borrower name if provided
+  if (input.borrower_name) {
+    const searchName = String(input.borrower_name).toLowerCase();
+    memos = memos.filter(m =>
+      m.loans?.borrowers?.name?.toLowerCase().includes(searchName)
+    );
+  }
+
+  const result = memos.map(m => ({
+    id: m.id,
+    title: m.title,
+    preview: m.content?.substring(0, 150) + (m.content?.length > 150 ? '...' : ''),
+    borrower: m.loans?.borrowers?.name || 'Unknown',
+    loan: m.loans?.name || 'Unknown',
+    ai_generated: m.generated_by_ai,
+    created_by: m.users?.full_name || 'System',
+    created_at: m.created_at,
+  }));
+
+  return JSON.stringify({ memos: result, count: result.length }, null, 2);
 }
 
 async function getRiskScores(

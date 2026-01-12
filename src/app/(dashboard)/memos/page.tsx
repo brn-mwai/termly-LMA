@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,11 +9,13 @@ import { Scroll, Plus, Eye, Sparkle, User } from '@phosphor-icons/react/dist/ssr
 import { formatRelativeTime } from '@/lib/utils/format';
 import { MemosGridSkeleton } from '@/components/memos/memos-grid-skeleton';
 
+export const dynamic = 'force-dynamic';
+
 async function getMemos() {
   const { userId } = await auth();
   if (!userId) return [];
 
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   const { data: userData } = await supabase
     .from('users')

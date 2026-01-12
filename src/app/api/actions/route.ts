@@ -10,7 +10,8 @@ export type ActionType =
   | 'acknowledge_alert' | 'dismiss_alert' | 'escalate_alert'
   | 'categorize_document' | 'archive_document' | 'trigger_extraction'
   | 'create_financial_period' | 'update_financial_period' | 'calculate_ratios'
-  | 'bulk_update_loans' | 'bulk_acknowledge_alerts';
+  | 'bulk_update_loans' | 'bulk_acknowledge_alerts'
+  | 'create_memo' | 'update_memo' | 'delete_memo';
 
 interface ActionRequest {
   action: ActionType;
@@ -53,13 +54,13 @@ export async function POST(request: Request) {
 
     // Audit log (fire and forget, don't block the response)
     try {
-      await supabase.from('audit_log').insert({
+      await supabase.from('audit_logs').insert({
         organization_id: orgId,
         user_id: dbUserId,
-        action: `monty_${action}`,
+        action: action,
         entity_type: getEntityType(action),
         entity_id: (result.data as { id?: string })?.id || null,
-        details: { params, success: result.success },
+        changes: { params, success: result.success },
       });
     } catch {
       // Audit logging is non-critical
@@ -82,6 +83,7 @@ function getEntityType(action: ActionType): string {
   if (action.includes('alert')) return 'alert';
   if (action.includes('document')) return 'document';
   if (action.includes('financial')) return 'financial_period';
+  if (action.includes('memo')) return 'memo';
   return 'system';
 }
 
@@ -388,6 +390,76 @@ async function executeAction(
           interest_coverage: period.ebitda && period.interest_expense ? Number((period.ebitda / period.interest_expense).toFixed(2)) : null,
         };
         return { success: true, action, message: 'Ratios calculated', data: { period_id: period.id, ratios } };
+      }
+
+      // ===== MEMO OPERATIONS =====
+      case 'create_memo': {
+        const { loan_id, title, content, generated_by_ai } = params;
+        if (!loan_id || !title || !content) {
+          return { success: false, action, message: '', error: 'loan_id, title, and content required' };
+        }
+        // Verify loan belongs to org
+        const { data: loan } = await supabase.from('loans').select('id, name, borrowers (name)').eq('id', loan_id).eq('organization_id', orgId).single();
+        if (!loan) return { success: false, action, message: '', error: 'Loan not found' };
+
+        const { data, error } = await supabase.from('memos').insert({
+          organization_id: orgId,
+          loan_id: loan_id as string,
+          title: title as string,
+          content: content as string,
+          generated_by_ai: (generated_by_ai as boolean) ?? true,
+          created_by: userId,
+        }).select().single();
+        if (error) throw error;
+
+        // Log to audit_logs
+        await supabase.from('audit_logs').insert({
+          organization_id: orgId,
+          user_id: userId,
+          action: 'create',
+          entity_type: 'memo',
+          entity_id: data.id,
+          changes: { title, loan_id },
+        });
+
+        return { success: true, action, message: `Memo "${title}" created for ${(loan as { borrowers?: { name?: string } }).borrowers?.name || 'Unknown'}`, data };
+      }
+
+      case 'update_memo': {
+        const { memo_id, ...updates } = params;
+        if (!memo_id) return { success: false, action, message: '', error: 'memo_id required' };
+        const { data, error } = await supabase.from('memos').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', memo_id).eq('organization_id', orgId).select().single();
+        if (error) throw error;
+
+        // Log to audit_logs
+        await supabase.from('audit_logs').insert({
+          organization_id: orgId,
+          user_id: userId,
+          action: 'update',
+          entity_type: 'memo',
+          entity_id: memo_id as string,
+          changes: updates,
+        });
+
+        return { success: true, action, message: 'Memo updated', data };
+      }
+
+      case 'delete_memo': {
+        const { memo_id } = params;
+        if (!memo_id) return { success: false, action, message: '', error: 'memo_id required' };
+        const { error } = await supabase.from('memos').update({ deleted_at: new Date().toISOString() }).eq('id', memo_id).eq('organization_id', orgId);
+        if (error) throw error;
+
+        // Log to audit_logs
+        await supabase.from('audit_logs').insert({
+          organization_id: orgId,
+          user_id: userId,
+          action: 'delete',
+          entity_type: 'memo',
+          entity_id: memo_id as string,
+        });
+
+        return { success: true, action, message: 'Memo deleted', data: { id: memo_id } };
       }
 
       default:
