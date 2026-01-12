@@ -76,50 +76,200 @@ Every action tracked for compliance.
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    subgraph Client["🖥️ Client Layer"]
+        UI[Next.js Frontend]
+        Chat[Monty Chat Interface]
+    end
+
+    subgraph API["⚡ API Layer"]
+        ChatAPI["/api/chat"]
+        DocsAPI["/api/documents"]
+        LoansAPI["/api/loans"]
+        ActionsAPI["/api/actions"]
+        MemosAPI["/api/memos"]
+        AuditAPI["/api/audit"]
+    end
+
+    subgraph Services["🔧 Services"]
+        Auth[Clerk Auth]
+        AI[Anthropic AI]
+        Storage[Supabase Storage]
+    end
+
+    subgraph Data["🗄️ Data Layer"]
+        DB[(Supabase PostgreSQL)]
+    end
+
+    UI --> ChatAPI
+    UI --> DocsAPI
+    UI --> LoansAPI
+    Chat --> ChatAPI
+
+    ChatAPI --> AI
+    ChatAPI --> ActionsAPI
+    DocsAPI --> AI
+    DocsAPI --> Storage
+
+    ActionsAPI --> DB
+    LoansAPI --> DB
+    MemosAPI --> DB
+    AuditAPI --> DB
+    DocsAPI --> DB
+
+    UI --> Auth
+    Auth --> DB
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                           TERMLY PLATFORM                            │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐          │
-│  │   Next.js    │    │   Supabase   │    │  AI Services │          │
-│  │   Frontend   │◄──►│   Database   │◄──►│  (Anthropic) │          │
-│  └──────────────┘    └──────────────┘    └──────────────┘          │
-│         │                   │                   │                   │
-│         ▼                   ▼                   ▼                   │
-│  ┌──────────────────────────────────────────────────────┐          │
-│  │                    API ROUTES                         │          │
-│  ├──────────────────────────────────────────────────────┤          │
-│  │  /api/chat      - Monty AI conversations             │          │
-│  │  /api/documents - Document upload & extraction       │          │
-│  │  /api/loans     - Loan CRUD operations               │          │
-│  │  /api/actions   - Agentic actions (create/update)    │          │
-│  │  /api/memos     - Credit memo generation             │          │
-│  │  /api/audit     - Audit trail logging                │          │
-│  └──────────────────────────────────────────────────────┘          │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+
+---
+
+## System Flow
+
+```mermaid
+flowchart LR
+    subgraph Input
+        User((User))
+    end
+
+    subgraph Platform["Termly Platform"]
+        Dashboard[Dashboard]
+        Monty[Monty AI]
+        Docs[Documents]
+        Alerts[Alerts]
+    end
+
+    subgraph Output
+        Reports[Reports]
+        Memos[Memos]
+        Actions[Actions]
+    end
+
+    User --> Dashboard
+    User --> Monty
+    User --> Docs
+
+    Dashboard --> Alerts
+    Monty --> Actions
+    Docs --> Reports
+    Alerts --> Memos
 ```
 
 ---
 
 ## AI Document Extraction Flow
 
+```mermaid
+flowchart TD
+    A[📄 Upload PDF] --> B{Document Type?}
+
+    B -->|Credit Agreement| C[Extract Covenants]
+    B -->|Compliance Cert| D[Extract Financials]
+    B -->|Financial Statement| E[Extract Metrics]
+
+    C --> F[AI Processing]
+    D --> F
+    E --> F
+
+    F --> G{Extraction Success?}
+
+    G -->|Yes| H[Store to Database]
+    G -->|No| I[Try Fallback Model]
+
+    I --> J{Fallback Success?}
+    J -->|Yes| H
+    J -->|No| K[Mark as Failed]
+
+    H --> L[✅ Data Available]
+
+    subgraph Extracted["📊 Extracted Data"]
+        L --> M[Covenants]
+        L --> N[EBITDA Definition]
+        L --> O[Addbacks]
+        L --> P[Financial Metrics]
+    end
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Upload    │     │   Parse     │     │  Extract    │     │   Store     │
-│    PDF      │────►│   Document  │────►│  with AI    │────►│  to DB      │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                                              │
-                                              ▼
-                                    ┌─────────────────┐
-                                    │  Extracted Data │
-                                    ├─────────────────┤
-                                    │ • Covenants     │
-                                    │ • EBITDA Def    │
-                                    │ • Addbacks      │
-                                    │ • Financials    │
-                                    └─────────────────┘
+
+---
+
+## Monty Agent Flow
+
+```mermaid
+flowchart TD
+    A[💬 User Message] --> B[Monty AI Agent]
+
+    B --> C{Needs Data?}
+
+    C -->|Yes| D[Execute Read Tools]
+    C -->|No| E{Needs Action?}
+
+    D --> F[Query Database]
+    F --> G[Process Results]
+    G --> B
+
+    E -->|Yes| H[Execute Write Tools]
+    E -->|No| I[Generate Response]
+
+    H --> J[Update Database]
+    J --> K[Log to Audit Trail]
+    K --> I
+
+    I --> L[📨 Send Response to User]
+
+    subgraph Tools["🔧 Available Tools"]
+        D --> D1[get_loans]
+        D --> D2[get_alerts]
+        D --> D3[get_portfolio_summary]
+        H --> H1[create_loan]
+        H --> H2[create_memo]
+        H --> H3[acknowledge_alert]
+    end
+```
+
+---
+
+## Data Flow
+
+```mermaid
+flowchart LR
+    subgraph Ingest["📥 Data Ingestion"]
+        PDF[PDF Upload]
+        Manual[Manual Entry]
+        API[API Import]
+    end
+
+    subgraph Process["⚙️ Processing"]
+        Extract[AI Extraction]
+        Validate[Validation]
+        Calculate[Ratio Calculation]
+    end
+
+    subgraph Store["💾 Storage"]
+        DB[(Database)]
+        Files[(File Storage)]
+    end
+
+    subgraph Monitor["📊 Monitoring"]
+        Alerts[Alert Engine]
+        Dashboard[Dashboard]
+        Reports[Reports]
+    end
+
+    PDF --> Extract
+    Manual --> Validate
+    API --> Validate
+
+    Extract --> Validate
+    Validate --> Calculate
+    Calculate --> DB
+    PDF --> Files
+
+    DB --> Alerts
+    DB --> Dashboard
+    DB --> Reports
+
+    Alerts -->|Breach| Notify[🔔 Notifications]
+    Alerts -->|Warning| Notify
 ```
 
 ---
