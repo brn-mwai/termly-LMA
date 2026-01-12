@@ -281,6 +281,20 @@ export const MONTY_TOOLS = [
       required: [],
     },
   },
+  {
+    name: 'get_risk_scores',
+    description: 'Get risk scores for borrowers based on covenant compliance, headroom, trends, and credit rating. Returns risk level (low/medium/high) with contributing factors.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        borrower_name: {
+          type: 'string',
+          description: 'Get risk score for a specific borrower',
+        },
+      },
+      required: [],
+    },
+  },
 ] as const;
 
 // Tool execution functions
@@ -324,6 +338,8 @@ export async function executeTool(
         return await triggerExtraction(supabase, organizationId, toolInput);
       case 'get_audit_log':
         return await getAuditLog(supabase, organizationId, toolInput);
+      case 'get_risk_scores':
+        return await getRiskScores(supabase, organizationId, toolInput);
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
@@ -1522,4 +1538,166 @@ function summarizeChanges(changes: Record<string, unknown>): string {
   if (keys.length === 0) return 'No changes';
   if (keys.length <= 3) return keys.join(', ');
   return `${keys.slice(0, 3).join(', ')} +${keys.length - 3} more`;
+}
+
+async function getRiskScores(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  // Get loans for this org
+  let loansQuery = supabase
+    .from('loans')
+    .select(`
+      id,
+      name,
+      borrower_id,
+      borrowers (id, name, rating)
+    `)
+    .eq('organization_id', orgId)
+    .is('deleted_at', null);
+
+  // Filter by borrower if specified
+  if (input.borrower_name) {
+    const { data: borrowers } = await supabase
+      .from('borrowers')
+      .select('id')
+      .eq('organization_id', orgId)
+      .ilike('name', `%${input.borrower_name}%`);
+
+    if (borrowers && borrowers.length > 0) {
+      loansQuery = loansQuery.in('borrower_id', borrowers.map(b => b.id));
+    }
+  }
+
+  const { data: loans } = await loansQuery;
+
+  interface LoanData {
+    id: string;
+    name: string;
+    borrower_id: string;
+    borrowers?: { id: string; name: string; rating?: string };
+  }
+
+  const loansList = (loans || []) as unknown as LoanData[];
+
+  if (loansList.length === 0) {
+    return JSON.stringify({ message: 'No loans found', riskScores: [] });
+  }
+
+  const loanIds = loansList.map(l => l.id);
+
+  // Get covenants with test results
+  const { data: covenants } = await supabase
+    .from('covenants')
+    .select(`
+      id,
+      loan_id,
+      covenant_tests (status, headroom_percentage, tested_at)
+    `)
+    .in('loan_id', loanIds)
+    .is('deleted_at', null);
+
+  interface CovenantData {
+    id: string;
+    loan_id: string;
+    covenant_tests?: Array<{ status: string; headroom_percentage: number; tested_at: string }>;
+  }
+
+  const covenantsList = (covenants || []) as unknown as CovenantData[];
+
+  // Group by borrower and calculate risk
+  const borrowerData: Record<string, {
+    name: string;
+    rating: string | null;
+    loans: string[];
+    breaches: number;
+    warnings: number;
+    headrooms: number[];
+  }> = {};
+
+  for (const loan of loansList) {
+    const borrowerId = loan.borrowers?.id || loan.borrower_id;
+    const borrowerName = loan.borrowers?.name || 'Unknown';
+
+    if (!borrowerData[borrowerId]) {
+      borrowerData[borrowerId] = {
+        name: borrowerName,
+        rating: loan.borrowers?.rating || null,
+        loans: [],
+        breaches: 0,
+        warnings: 0,
+        headrooms: [],
+      };
+    }
+
+    borrowerData[borrowerId].loans.push(loan.name);
+  }
+
+  // Process covenants
+  for (const cov of covenantsList) {
+    const loan = loansList.find(l => l.id === cov.loan_id);
+    if (!loan) continue;
+
+    const borrowerId = loan.borrowers?.id || loan.borrower_id;
+    if (!borrowerData[borrowerId]) continue;
+
+    const tests = cov.covenant_tests || [];
+    const latest = tests.sort((a, b) =>
+      new Date(b.tested_at).getTime() - new Date(a.tested_at).getTime()
+    )[0];
+
+    if (latest) {
+      if (latest.status === 'breach') borrowerData[borrowerId].breaches++;
+      if (latest.status === 'warning') borrowerData[borrowerId].warnings++;
+      if (latest.headroom_percentage !== null) {
+        borrowerData[borrowerId].headrooms.push(latest.headroom_percentage);
+      }
+    }
+  }
+
+  // Calculate risk scores
+  const riskScores = Object.entries(borrowerData).map(([id, data]) => {
+    let score = 0;
+
+    // Breaches add 25 points each (max 50)
+    score += Math.min(data.breaches * 25, 50);
+
+    // Warnings add 10 points each (max 30)
+    score += Math.min(data.warnings * 10, 30);
+
+    // Low headroom adds up to 20 points
+    if (data.headrooms.length > 0) {
+      const minHeadroom = Math.min(...data.headrooms);
+      if (minHeadroom < 0) score += 20;
+      else if (minHeadroom < 10) score += 15;
+      else if (minHeadroom < 20) score += 10;
+    }
+
+    const level = score > 60 ? 'HIGH' : score > 30 ? 'MEDIUM' : 'LOW';
+    const minHeadroom = data.headrooms.length > 0 ? Math.min(...data.headrooms) : null;
+
+    return {
+      borrower: data.name,
+      rating: data.rating || 'Not rated',
+      loans: data.loans.length,
+      score,
+      level,
+      breaches: data.breaches,
+      warnings: data.warnings,
+      lowestHeadroom: minHeadroom !== null ? `${minHeadroom.toFixed(1)}%` : 'N/A',
+    };
+  });
+
+  // Sort by score descending
+  riskScores.sort((a, b) => b.score - a.score);
+
+  const summary = {
+    totalBorrowers: riskScores.length,
+    highRisk: riskScores.filter(r => r.level === 'HIGH').length,
+    mediumRisk: riskScores.filter(r => r.level === 'MEDIUM').length,
+    lowRisk: riskScores.filter(r => r.level === 'LOW').length,
+  };
+
+  return JSON.stringify({ riskScores, summary }, null, 2);
 }

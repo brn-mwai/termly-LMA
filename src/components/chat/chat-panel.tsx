@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils/cn';
 import { useChat } from './chat-context';
 import { useSidebar } from '@/components/ui/sidebar';
 import ReactMarkdown from 'react-markdown';
+import { ThinkingIndicator } from './thinking-indicator';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -397,16 +398,7 @@ export function ChatPanel() {
               </div>
             ))}
 
-            {loading && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-md bg-muted px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <CircleNotch className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
+            {loading && <ThinkingIndicator />}
             <div ref={messagesEndRef} />
           </>
         )}

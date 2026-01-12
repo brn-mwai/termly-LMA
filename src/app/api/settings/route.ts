@@ -20,6 +20,19 @@ export interface UserPreferences {
   };
 }
 
+const DEFAULT_PREFERENCES: UserPreferences = {
+  notifications: {
+    emailAlerts: true,
+    criticalOnly: false,
+    weeklyDigest: true,
+  },
+  regional: {
+    dateFormat: 'MM/DD/YYYY',
+    currency: 'USD',
+    timezone: 'America/New_York',
+  },
+};
+
 export async function GET() {
   try {
     const { userId } = await auth();
@@ -27,10 +40,10 @@ export async function GET() {
 
     const supabase = createAdminClient();
 
-    // Get user's organization
+    // Get user's organization and preferences
     const { data: userData } = await supabase
       .from('users')
-      .select('organization_id')
+      .select('organization_id, preferences')
       .eq('clerk_id', userId)
       .is('deleted_at', null)
       .single();
@@ -53,11 +66,25 @@ export async function GET() {
 
     const org = orgRaw as { id: string; name: string; slug: string };
 
+    // Merge stored preferences with defaults
+    const userPrefs = userData.preferences as UserPreferences | null;
+    const preferences: UserPreferences = {
+      notifications: {
+        ...DEFAULT_PREFERENCES.notifications,
+        ...(userPrefs?.notifications || {}),
+      },
+      regional: {
+        ...DEFAULT_PREFERENCES.regional,
+        ...(userPrefs?.regional || {}),
+      },
+    };
+
     return successResponse({
       organization: {
         name: org.name,
         domain: org.slug,
       },
+      preferences,
     });
   } catch (error) {
     return handleApiError(error);
@@ -75,7 +102,7 @@ export async function PUT(request: Request) {
     // Get user's organization
     const { data: userData } = await supabase
       .from('users')
-      .select('organization_id')
+      .select('id, organization_id')
       .eq('clerk_id', userId)
       .is('deleted_at', null)
       .single();
@@ -84,6 +111,7 @@ export async function PUT(request: Request) {
       return errorResponse('FORBIDDEN', 'User organization not found', 403);
     }
     const orgId = userData.organization_id;
+    const dbUserId = userData.id;
 
     // Update organization if provided
     if (body.organization) {
@@ -106,6 +134,22 @@ export async function PUT(request: Request) {
           console.error('Failed to update organization:', updateError);
           return errorResponse('UPDATE_FAILED', 'Failed to update organization settings', 500);
         }
+      }
+    }
+
+    // Update user preferences if provided
+    if (body.preferences) {
+      const { error: prefError } = await supabase
+        .from('users')
+        .update({
+          preferences: body.preferences,
+          updated_at: new Date().toISOString(),
+        } as never)
+        .eq('id', dbUserId);
+
+      if (prefError) {
+        console.error('Failed to update user preferences:', prefError);
+        return errorResponse('UPDATE_FAILED', 'Failed to update user preferences', 500);
       }
     }
 

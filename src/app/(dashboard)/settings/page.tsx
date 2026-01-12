@@ -32,8 +32,6 @@ import { useTour } from "@/components/tour/tour-provider";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
-const PREFERENCES_KEY = "termly_user_preferences";
-
 interface UserPreferences {
   notifications: {
     emailAlerts: boolean;
@@ -72,7 +70,7 @@ export default function SettingsPage() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        // Load organization settings from API
+        // Load all settings from API (org + preferences)
         const res = await fetch("/api/settings");
         if (res.ok) {
           const { data } = await res.json();
@@ -80,18 +78,15 @@ export default function SettingsPage() {
             setOrgName(data.organization.name || "");
             setOrgDomain(data.organization.domain || "");
           }
-        }
-
-        // Load user preferences from localStorage
-        const stored = localStorage.getItem(PREFERENCES_KEY);
-        if (stored) {
-          const prefs: UserPreferences = JSON.parse(stored);
-          setEmailAlerts(prefs.notifications.emailAlerts);
-          setCriticalOnly(prefs.notifications.criticalOnly);
-          setWeeklyDigest(prefs.notifications.weeklyDigest);
-          setDateFormat(prefs.regional.dateFormat);
-          setCurrency(prefs.regional.currency);
-          setTimezone(prefs.regional.timezone);
+          if (data?.preferences) {
+            const prefs = data.preferences as UserPreferences;
+            setEmailAlerts(prefs.notifications?.emailAlerts ?? true);
+            setCriticalOnly(prefs.notifications?.criticalOnly ?? false);
+            setWeeklyDigest(prefs.notifications?.weeklyDigest ?? true);
+            setDateFormat(prefs.regional?.dateFormat ?? "MM/DD/YYYY");
+            setCurrency(prefs.regional?.currency ?? "USD");
+            setTimezone(prefs.regional?.timezone ?? "America/New_York");
+          }
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -108,23 +103,6 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Save organization settings to API
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organization: {
-            name: orgName,
-            domain: orgDomain,
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to save organization settings");
-      }
-
-      // Save user preferences to localStorage
       const preferences: UserPreferences = {
         notifications: {
           emailAlerts,
@@ -137,7 +115,23 @@ export default function SettingsPage() {
           timezone,
         },
       };
-      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+
+      // Save organization settings and preferences to API
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organization: {
+            name: orgName,
+            domain: orgDomain,
+          },
+          preferences,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save settings");
+      }
 
       toast.success("Settings saved successfully");
     } catch (error) {
