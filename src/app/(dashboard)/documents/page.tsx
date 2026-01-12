@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -17,6 +17,9 @@ import { UploadSimple, FileText, Eye, CheckCircle, Clock, WarningCircle, CircleN
 import { formatDate } from '@/lib/utils/format';
 import { DocumentsTableSkeleton } from '@/components/documents/documents-table-skeleton';
 
+// Force dynamic rendering to always get fresh data
+export const dynamic = 'force-dynamic';
+
 const statusConfig: Record<string, { icon: any; label: string; className: string }> = {
   pending: { icon: Clock, label: 'Pending', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
   processing: { icon: CircleNotch, label: 'Processing', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -29,7 +32,7 @@ async function getDocuments() {
   const { userId } = await auth();
   if (!userId) return [];
 
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   const { data: userData } = await supabase
     .from('users')

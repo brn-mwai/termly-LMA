@@ -8,8 +8,10 @@ import { cn } from '@/lib/utils/cn';
 import { useChat } from './chat-context';
 import { useSidebar } from '@/components/ui/sidebar';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ThinkingIndicator } from './thinking-indicator';
 import { ActionSteps, ActionStep } from './action-steps';
+import { ArrowSquareOut } from '@phosphor-icons/react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -508,8 +510,28 @@ export function ChatPanel() {
                         {/* Message content - only show if there's content */}
                         {!hasNoContent && (
                           <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2">
-                            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-background/50 [&_pre]:p-2 [&_pre]:rounded-lg [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-medium [&_h2]:font-medium [&_h3]:font-medium">
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1.5 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_code]:bg-background/50 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-emerald-600 [&_code]:dark:text-emerald-400 [&_pre]:bg-background/50 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-medium [&_h1]:text-emerald-700 [&_h1]:dark:text-emerald-400 [&_h2]:text-emerald-600 [&_h2]:dark:text-emerald-400 [&_h3]:text-foreground [&_strong]:text-foreground [&_table]:w-full [&_table]:text-xs [&_table]:border-collapse [&_th]:bg-emerald-50 [&_th]:dark:bg-emerald-950/50 [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-medium [&_th]:border [&_th]:border-border [&_td]:px-2 [&_td]:py-1.5 [&_td]:border [&_td]:border-border [&_tr:nth-child(even)]:bg-muted/50 [&_blockquote]:border-l-2 [&_blockquote]:border-emerald-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-muted-foreground [&_hr]:border-border [&_hr]:my-3">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  a: ({ href, children }) => {
+                                    const isInternal = href?.startsWith('/');
+                                    return (
+                                      <a
+                                        href={href}
+                                        target={isInternal ? '_self' : '_blank'}
+                                        rel={isInternal ? undefined : 'noopener noreferrer'}
+                                        className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline underline-offset-2 decoration-emerald-300 dark:decoration-emerald-700 hover:decoration-emerald-500 transition-colors"
+                                      >
+                                        {children}
+                                        {!isInternal && <ArrowSquareOut className="h-3 w-3" />}
+                                      </a>
+                                    );
+                                  },
+                                }}
+                              >
+                                {msg.content}
+                              </ReactMarkdown>
                             </div>
                           </div>
                         )}
