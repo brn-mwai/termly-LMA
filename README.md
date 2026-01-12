@@ -2,6 +2,23 @@
   <img src="public/Termly-Visual-Screenshots/Header-Termly.png" alt="Termly" width="100%" />
 </p>
 
+<p align="center">
+  <a href="https://termly.cc"><img src="https://img.shields.io/badge/Live%20Demo-termly.cc-10b981?style=for-the-badge" alt="Live Demo" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/LMA%20EDGE-Hackathon%202025-1e3a5f?style=for-the-badge" alt="LMA EDGE Hackathon" /></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind-4-06b6d4?style=flat-square&logo=tailwindcss" alt="Tailwind" />
+  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Anthropic-AI-d4a574?style=flat-square" alt="Anthropic" />
+  <img src="https://img.shields.io/badge/Vercel-Deployed-black?style=flat-square&logo=vercel" alt="Vercel" />
+</p>
+
+---
+
 # Termly
 
 > AI-powered covenant monitoring platform for commercial lenders.
