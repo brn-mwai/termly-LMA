@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -119,8 +121,25 @@ export default function MemoDetailPage() {
 
       {/* Content */}
       <Card>
-        <CardContent className="prose prose-sm max-w-none p-6">
-          <div className="whitespace-pre-wrap">{memo.content}</div>
+        <CardContent className="p-6">
+          <div className="prose prose-sm dark:prose-invert max-w-none
+            prose-headings:font-semibold prose-headings:tracking-tight
+            prose-h1:text-2xl prose-h1:border-b prose-h1:pb-2 prose-h1:mb-4
+            prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
+            prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2
+            prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed
+            prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-gray-100
+            prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5
+            prose-table:border prose-table:border-gray-200 dark:prose-table:border-gray-700
+            prose-th:bg-gray-50 dark:prose-th:bg-gray-800 prose-th:p-2 prose-th:text-left
+            prose-td:p-2 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700
+            prose-hr:my-4 prose-hr:border-gray-200 dark:prose-hr:border-gray-700
+            prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline
+          ">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {memo.content}
+            </ReactMarkdown>
+          </div>
         </CardContent>
       </Card>
     </div>
