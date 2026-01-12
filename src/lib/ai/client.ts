@@ -183,7 +183,7 @@ async function chatWithGroq(
 }
 
 /**
- * Chat with AI using Claude as primary and Groq as fallback.
+ * Chat with AI using Anthropic as primary and Groq as fallback.
  */
 export async function chat(
   messages: ChatMessage[],
@@ -192,7 +192,7 @@ export async function chat(
   const anthropic = getAnthropicClient();
   const groq = getGroqClient();
 
-  // Try Claude first if available
+  // Try Anthropic first if available
   if (anthropic) {
     try {
       return await chatWithAnthropic(messages);
@@ -235,7 +235,7 @@ export interface ToolExecution {
 export type OnToolExecutionCallback = (execution: ToolExecution) => void;
 
 /**
- * Agent chat with tool use support (Claude).
+ * Agent chat with tool use support (Anthropic).
  * Handles the full agentic loop with tool execution.
  */
 export async function agentChat(

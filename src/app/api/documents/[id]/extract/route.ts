@@ -153,7 +153,7 @@ export async function POST(
       console.warn(`[Extract] PDF parsing failed, will try vision-only:`, parseError);
     }
 
-    // Use smart fallback extraction (Claude Vision → Claude Text → Groq Llama)
+    // Use smart fallback extraction (Anthropic Vision → Anthropic Text → Groq Llama)
     try {
       console.log(`[Extract] Starting smart extraction with fallback...`);
       const { result, method } = await extractWithFallback(

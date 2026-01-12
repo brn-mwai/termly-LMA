@@ -135,7 +135,7 @@ export async function POST(request: Request) {
 
     const organizationId = userData.organization_id;
 
-    // Check if Claude is available for agent mode
+    // Check if Anthropic is available for agent mode
     const anthropicAvailable = !!getAnthropicClient();
 
     if (anthropicAvailable) {
@@ -380,7 +380,7 @@ async function handleSimpleChat(
 - Recent covenant tests: ${tests.filter((t: any) => t.status === 'compliant').length} compliant, ${tests.filter((t: any) => t.status === 'warning').length} warning, ${tests.filter((t: any) => t.status === 'breach').length} breach
 - Recent loans: ${loans.slice(0, 5).map((l: any) => `${l.borrowers?.name || 'Unknown'} (${l.name})`).join(', ')}
 
-Note: Running without full database access. Data shown is a summary. For detailed queries, Claude API is required.`;
+Note: Running without full database access. Data shown is a summary. For detailed queries, Anthropic API is required.`;
 
   const messages: ChatMessage[] = [
     { role: 'system', content: AGENT_SYSTEM_PROMPT + '\n\n' + portfolioContext },

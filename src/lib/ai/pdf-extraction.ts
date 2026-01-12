@@ -254,8 +254,8 @@ const PROMPTS: Record<string, string> = {
 };
 
 /**
- * Extract data from a PDF using Claude's native PDF vision support
- * This sends the actual PDF to Claude which can "see" the document
+ * Extract data from a PDF using Anthropic's native PDF vision support
+ * This sends the actual PDF to Anthropic which can "see" the document
  */
 export async function extractFromPDFWithVision(
   pdfBuffer: Buffer,
@@ -276,7 +276,7 @@ export async function extractFromPDFWithVision(
   const prompt = PROMPTS[documentType] || PROMPTS.credit_agreement;
 
   try {
-    console.log(`[PDF Vision] Sending to Claude API...`);
+    console.log(`[PDF Vision] Sending to Anthropic API...`);
 
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
@@ -302,12 +302,12 @@ export async function extractFromPDFWithVision(
       ],
     });
 
-    console.log(`[PDF Vision] Received response from Claude`);
+    console.log(`[PDF Vision] Received response from AI`);
 
     // Extract the text content from the response
     const textContent = response.content.find((c) => c.type === "text");
     if (!textContent || textContent.type !== "text") {
-      throw new Error("No text response from Claude");
+      throw new Error("No text response from AI");
     }
 
     const responseText = textContent.text;
@@ -317,7 +317,7 @@ export async function extractFromPDFWithVision(
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error(`[PDF Vision] No JSON found in response: ${responseText.substring(0, 500)}`);
-      throw new Error("No JSON found in Claude response");
+      throw new Error("No JSON found in AI response");
     }
 
     const extractedData = JSON.parse(jsonMatch[0]);
@@ -353,10 +353,10 @@ export async function extractFromPDFWithVision(
 }
 
 /**
- * Fallback text-based extraction using Claude
+ * Fallback text-based extraction using Anthropic API
  * Used when PDF vision is not available or fails
  */
-export async function extractFromTextWithClaude(
+export async function extractFromTextWithAnthropic(
   documentText: string,
   documentType: string
 ): Promise<PDFExtractionResult> {
@@ -365,12 +365,12 @@ export async function extractFromTextWithClaude(
     throw new Error("Anthropic API key not configured");
   }
 
-  console.log(`[Claude Text] Starting text-based extraction`);
-  console.log(`[Claude Text] Text length: ${documentText.length} chars`);
+  console.log(`[Anthropic Text] Starting text-based extraction`);
+  console.log(`[Anthropic Text] Text length: ${documentText.length} chars`);
 
   const prompt = PROMPTS[documentType] || PROMPTS.credit_agreement;
 
-  // Truncate text if too long (Claude context limit)
+  // Truncate text if too long (API context limit)
   const maxLength = 100000;
   const truncatedText = documentText.length > maxLength
     ? documentText.substring(0, maxLength) + "\n\n[Document truncated...]"
@@ -390,12 +390,12 @@ export async function extractFromTextWithClaude(
 
     const textContent = response.content.find((c) => c.type === "text");
     if (!textContent || textContent.type !== "text") {
-      throw new Error("No text response from Claude");
+      throw new Error("No text response from AI");
     }
 
     const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("No JSON found in Claude response");
+      throw new Error("No JSON found in AI response");
     }
 
     const extractedData = JSON.parse(jsonMatch[0]);
@@ -406,21 +406,21 @@ export async function extractFromTextWithClaude(
         ...extractedData,
         documentType: documentType as PDFExtractionResult["documentType"],
         overallConfidence: 0.5,
-        extractionNotes: ["Claude text extraction - validation warnings"],
+        extractionNotes: ["Anthropic text extraction - validation warnings"],
       };
     }
 
-    console.log(`[Claude Text] Extraction successful`);
+    console.log(`[Anthropic Text] Extraction successful`);
     return validated.data;
   } catch (error) {
-    console.error(`[Claude Text] Error:`, error);
+    console.error(`[Anthropic Text] Error:`, error);
     throw error;
   }
 }
 
 /**
  * Fallback text-based extraction using Groq with Llama 3.3 70B
- * Used when Claude is not available
+ * Used when Anthropic API is not available
  */
 export async function extractFromTextWithGroq(
   documentText: string,
@@ -544,31 +544,31 @@ export async function extractFromTextWithGroq(
 
 /**
  * Smart extraction with automatic provider fallback
- * Order: Claude PDF Vision → Claude Text → Groq Llama
+ * Order: Anthropic PDF Vision → Anthropic Text → Groq Llama
  */
 export async function extractWithFallback(
   pdfBuffer: Buffer,
   documentText: string,
   documentType: string
 ): Promise<{ result: PDFExtractionResult; method: string }> {
-  // 1. Try Claude PDF Vision (best quality)
+  // 1. Try Anthropic PDF Vision (best quality)
   const anthropic = getAnthropicClient();
   if (anthropic) {
     try {
-      console.log(`[Fallback] Trying Claude PDF Vision...`);
+      console.log(`[Fallback] Trying Anthropic PDF Vision...`);
       const result = await extractFromPDFWithVision(pdfBuffer, documentType);
-      return { result, method: "claude_vision" };
+      return { result, method: "anthropic_vision" };
     } catch (error) {
-      console.warn(`[Fallback] Claude PDF Vision failed:`, error);
+      console.warn(`[Fallback] Anthropic PDF Vision failed:`, error);
     }
 
-    // 2. Try Claude Text extraction
+    // 2. Try Anthropic Text extraction
     try {
-      console.log(`[Fallback] Trying Claude Text extraction...`);
-      const result = await extractFromTextWithClaude(documentText, documentType);
-      return { result, method: "claude_text" };
+      console.log(`[Fallback] Trying Anthropic Text extraction...`);
+      const result = await extractFromTextWithAnthropic(documentText, documentType);
+      return { result, method: "anthropic_text" };
     } catch (error) {
-      console.warn(`[Fallback] Claude Text failed:`, error);
+      console.warn(`[Fallback] Anthropic Text failed:`, error);
     }
   }
 
