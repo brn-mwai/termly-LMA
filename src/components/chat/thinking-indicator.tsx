@@ -50,8 +50,8 @@ export function ThinkingIndicator() {
         <span
           className={`
             text-sm font-medium
-            bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600
-            dark:from-emerald-400 dark:via-emerald-300 dark:to-emerald-400
+            bg-gradient-to-r from-gray-500 via-gray-400 to-gray-500
+            dark:from-gray-400 dark:via-gray-300 dark:to-gray-400
             bg-[length:200%_100%]
             animate-gradient-x
             bg-clip-text text-transparent

@@ -99,12 +99,12 @@ export function ActionSteps({ actions, isStreaming = false }: ActionStepsProps) 
   return (
     <div className="flex flex-col gap-1.5 mt-2 mb-3">
       <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-        <ArrowRight className="h-3 w-3 text-emerald-500" />
-        <span className="bg-gradient-to-r from-emerald-600 to-emerald-500 dark:from-emerald-400 dark:to-emerald-300 bg-clip-text text-transparent">
+        <ArrowRight className="h-3 w-3 text-gray-400" />
+        <span className="text-gray-500 dark:text-gray-400">
           Actions
         </span>
         {isStreaming && (
-          <CircleNotch className="h-3 w-3 animate-spin text-emerald-500" />
+          <CircleNotch className="h-3 w-3 animate-spin text-gray-400" />
         )}
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -119,13 +119,11 @@ export function ActionSteps({ actions, isStreaming = false }: ActionStepsProps) 
               key={`${action.tool}-${action.timestamp}-${index}`}
               className={cn(
                 "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs",
-                "border transition-all duration-300 ease-out",
+                "transition-all duration-300 ease-out",
                 isNew && "animate-in fade-in-0 slide-in-from-left-2",
                 action.success
-                  ? category === 'write'
-                    ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950/50 dark:border-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-100 dark:shadow-emerald-900/20"
-                    : "bg-emerald-50/50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-                  : "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/50 dark:border-red-800 dark:text-red-300"
+                  ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  : "bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300"
               )}
               title={`${getToolLabel(action.tool)}${inputSummary ? `: ${inputSummary}` : ''}`}
             >
@@ -134,9 +132,9 @@ export function ActionSteps({ actions, isStreaming = false }: ActionStepsProps) 
                 {getToolLabel(action.tool)}
               </span>
               {action.success ? (
-                <Check className="h-3 w-3 flex-shrink-0 text-emerald-600 dark:text-emerald-400" weight="bold" />
+                <Check className="h-3 w-3 flex-shrink-0 text-gray-500 dark:text-gray-400" weight="bold" />
               ) : (
-                <X className="h-3 w-3 flex-shrink-0 text-red-600 dark:text-red-400" weight="bold" />
+                <X className="h-3 w-3 flex-shrink-0 text-red-500 dark:text-red-400" weight="bold" />
               )}
             </div>
           );
