@@ -121,25 +121,39 @@ export default function MemoDetailPage() {
 
       {/* Content */}
       <Card>
-        <CardContent className="p-6">
-          <div className="prose prose-sm dark:prose-invert max-w-none
-            prose-headings:font-semibold prose-headings:tracking-tight
-            prose-h1:text-2xl prose-h1:border-b prose-h1:pb-2 prose-h1:mb-4
-            prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
-            prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2
-            prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed
+        <CardContent className="p-8 md:p-10">
+          <article className="prose prose-base dark:prose-invert max-w-none
+            [&>*]:mb-4
+
+            prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+            prose-h1:text-2xl prose-h1:border-b prose-h1:border-gray-200 dark:prose-h1:border-gray-700 prose-h1:pb-3 prose-h1:mb-6 prose-h1:mt-0
+            prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:pt-4 prose-h2:border-t prose-h2:border-gray-100 dark:prose-h2:border-gray-800
+            prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
+
+            prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-7 prose-p:mb-4
             prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-gray-100
-            prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5
-            prose-table:border prose-table:border-gray-200 dark:prose-table:border-gray-700
-            prose-th:bg-gray-50 dark:prose-th:bg-gray-800 prose-th:p-2 prose-th:text-left
-            prose-td:p-2 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700
-            prose-hr:my-4 prose-hr:border-gray-200 dark:prose-hr:border-gray-700
+
+            prose-ul:my-4 prose-ul:pl-6 prose-ul:list-disc
+            prose-ol:my-4 prose-ol:pl-6 prose-ol:list-decimal
+            prose-li:my-1.5 prose-li:leading-7 prose-li:text-gray-700 dark:prose-li:text-gray-300
+
+            prose-table:my-6 prose-table:w-full prose-table:border-collapse prose-table:border prose-table:border-gray-200 dark:prose-table:border-gray-700 prose-table:rounded-lg prose-table:overflow-hidden
+            prose-thead:bg-gray-50 dark:prose-thead:bg-gray-800
+            prose-th:px-4 prose-th:py-3 prose-th:text-left prose-th:text-sm prose-th:font-semibold prose-th:text-gray-900 dark:prose-th:text-gray-100 prose-th:border-b prose-th:border-gray-200 dark:prose-th:border-gray-700
+            prose-td:px-4 prose-td:py-3 prose-td:text-sm prose-td:border-b prose-td:border-gray-100 dark:prose-td:border-gray-800
+
+            prose-hr:my-8 prose-hr:border-t-2 prose-hr:border-gray-200 dark:prose-hr:border-gray-700
+
+            prose-blockquote:border-l-4 prose-blockquote:border-emerald-500 prose-blockquote:pl-4 prose-blockquote:py-1 prose-blockquote:my-4 prose-blockquote:bg-gray-50 dark:prose-blockquote:bg-gray-800/50 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-gray-600 dark:prose-blockquote:text-gray-400
+
+            prose-em:text-gray-600 dark:prose-em:text-gray-400
             prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline
+            prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
           ">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {memo.content}
             </ReactMarkdown>
-          </div>
+          </article>
         </CardContent>
       </Card>
     </div>
