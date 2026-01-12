@@ -49,7 +49,8 @@
       "Bash(powershell:*)",
       "Bash(curl.exe:*)",
       "Bash(npx tsx:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(timeout 10 npm run dev:*)"
     ]
   }
 }

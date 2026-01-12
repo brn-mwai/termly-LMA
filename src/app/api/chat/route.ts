@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { chat, agentChat, ChatMessage, getAnthropicClient, ToolExecution } from '@/lib/ai/client';
+import { chat, agentChat, ChatMessage, getAnthropicClient, ToolExecution, OnToolExecutionCallback } from '@/lib/ai/client';
 import { MONTY_TOOLS, executeTool, ActionRequest } from '@/lib/ai/tools';
 import { successResponse, errorResponse, handleApiError } from '@/lib/utils/api';
 import { withRateLimit } from '@/lib/utils/rate-limit-middleware';
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 
     // Use admin client to bypass RLS
     const supabase = createAdminClient();
-    const { message, history = [] } = await request.json();
+    const { message, history = [], stream = false } = await request.json();
 
     if (!message) {
       return errorResponse('BAD_REQUEST', 'Message is required', 400);
@@ -121,6 +121,9 @@ export async function POST(request: Request) {
 
     if (anthropicAvailable) {
       // Use agent mode with tools
+      if (stream) {
+        return await handleStreamingAgentChat(message, history, supabase, organizationId);
+      }
       return await handleAgentChat(message, history, supabase, organizationId);
     } else {
       // Fallback to simple chat without tools
@@ -210,6 +213,113 @@ async function handleAgentChat(
     // Fallback to simple chat if agent fails
     return await handleSimpleChat(message, history, supabase, organizationId);
   }
+}
+
+async function handleStreamingAgentChat(
+  message: string,
+  history: { role: string; content: string }[],
+  supabase: any,
+  organizationId: string
+) {
+  // Convert history to ChatMessage format
+  const chatHistory: ChatMessage[] = history.slice(-10).map((m) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+  }));
+
+  // Convert tools to Anthropic format
+  const tools: Anthropic.Tool[] = MONTY_TOOLS.map(t => ({
+    name: t.name,
+    description: t.description,
+    input_schema: {
+      type: 'object' as const,
+      properties: t.input_schema.properties as Record<string, unknown>,
+      required: [...t.input_schema.required] as string[],
+    },
+  }));
+
+  // Create a TransformStream for SSE
+  const encoder = new TextEncoder();
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
+
+  // Helper to send SSE event
+  const sendEvent = async (event: string, data: unknown) => {
+    await writer.write(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+  };
+
+  // Tool execution function with streaming callback
+  const executeToolFn = async (name: string, input: Record<string, unknown>): Promise<string> => {
+    const result = await executeTool(name, input, supabase, organizationId);
+
+    // Check if this is an action request that needs to be executed
+    try {
+      const parsed = JSON.parse(result);
+      if (parsed.__action_request) {
+        const actionResult = await executeActionInternal(
+          supabase,
+          organizationId,
+          parsed.action,
+          parsed.params
+        );
+        return JSON.stringify(actionResult);
+      }
+    } catch {
+      // Not JSON or not an action request
+    }
+
+    return result;
+  };
+
+  // Callback for streaming tool executions
+  const onToolExecution: OnToolExecutionCallback = (execution) => {
+    sendEvent('action', {
+      tool: execution.name,
+      input: execution.input,
+      success: execution.success,
+      timestamp: execution.timestamp,
+    });
+  };
+
+  // Start the async process
+  (async () => {
+    try {
+      const result = await agentChat(
+        AGENT_SYSTEM_PROMPT,
+        message,
+        chatHistory,
+        tools,
+        executeToolFn,
+        onToolExecution
+      );
+
+      // Send final message
+      await sendEvent('message', {
+        message: result.message,
+        provider: 'anthropic',
+        usage: result.usage,
+        agent: true,
+        mode: 'full',
+      });
+
+      await sendEvent('done', {});
+    } catch (error) {
+      console.error('Streaming agent chat error:', error);
+      await sendEvent('error', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    } finally {
+      await writer.close();
+    }
+  })();
+
+  return new Response(stream.readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
 }
 
 async function handleSimpleChat(

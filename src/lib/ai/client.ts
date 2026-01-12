@@ -232,6 +232,8 @@ export interface ToolExecution {
   timestamp: number;
 }
 
+export type OnToolExecutionCallback = (execution: ToolExecution) => void;
+
 /**
  * Agent chat with tool use support (Claude).
  * Handles the full agentic loop with tool execution.
@@ -241,7 +243,8 @@ export async function agentChat(
   userMessage: string,
   history: ChatMessage[],
   tools: Anthropic.Tool[],
-  executeToolFn: (name: string, input: Record<string, unknown>) => Promise<string>
+  executeToolFn: (name: string, input: Record<string, unknown>) => Promise<string>,
+  onToolExecution?: OnToolExecutionCallback
 ): Promise<{ message: string; usage: { promptTokens: number; completionTokens: number }; toolExecutions: ToolExecution[] }> {
   const client = getAnthropicClient();
   if (!client) {
@@ -265,7 +268,7 @@ export async function agentChat(
   const totalUsage = { promptTokens: 0, completionTokens: 0 };
   const toolExecutions: ToolExecution[] = [];
   let iterations = 0;
-  const maxIterations = 5;
+  const maxIterations = 10; // Increased for complex multi-step operations
 
   while (iterations < maxIterations) {
     iterations++;
@@ -308,13 +311,18 @@ export async function agentChat(
       const startTime = Date.now();
       try {
         const result = await executeToolFn(toolUse.name, toolUse.input as Record<string, unknown>);
-        toolExecutions.push({
+        const execution: ToolExecution = {
           name: toolUse.name,
           input: toolUse.input as Record<string, unknown>,
           result,
           success: true,
           timestamp: startTime,
-        });
+        };
+        toolExecutions.push(execution);
+        // Notify callback for live streaming
+        if (onToolExecution) {
+          onToolExecution(execution);
+        }
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,
@@ -323,13 +331,18 @@ export async function agentChat(
       } catch (error) {
         console.error(`[Monty] Tool ${toolUse.name} failed:`, error);
         const errorMsg = `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        toolExecutions.push({
+        const execution: ToolExecution = {
           name: toolUse.name,
           input: toolUse.input as Record<string, unknown>,
           result: errorMsg,
           success: false,
           timestamp: startTime,
-        });
+        };
+        toolExecutions.push(execution);
+        // Notify callback for live streaming
+        if (onToolExecution) {
+          onToolExecution(execution);
+        }
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,

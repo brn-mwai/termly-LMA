@@ -116,6 +116,10 @@ export function ChatPanel() {
     setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
 
+    // Add placeholder for assistant message that will be updated with streaming actions
+    const placeholderIndex = messages.length + 1;
+    setMessages((prev) => [...prev, { role: 'assistant', content: '', actions: [] }]);
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -123,26 +127,120 @@ export function ChatPanel() {
         body: JSON.stringify({
           message: userMessage,
           history: messages.map((m) => ({ role: m.role, content: m.content })),
+          stream: true,
         }),
       });
 
       if (!res.ok) throw new Error('Chat failed');
 
-      const { data } = await res.json();
-      setMessages((prev) => [...prev, {
-        role: 'assistant',
-        content: data.message,
-        actions: data.actions || [],
-      }]);
-      // Track chat mode for UI indicator
-      if (data.mode) {
-        setChatMode(data.mode);
+      const contentType = res.headers.get('content-type');
+
+      if (contentType?.includes('text/event-stream')) {
+        // Handle SSE streaming
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        const streamedActions: ActionStep[] = [];
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            let currentEvent = '';
+            for (const line of lines) {
+              if (line.startsWith('event: ')) {
+                currentEvent = line.slice(7);
+              } else if (line.startsWith('data: ') && currentEvent) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+
+                  if (currentEvent === 'action') {
+                    streamedActions.push(data);
+                    // Update the placeholder message with new actions
+                    setMessages((prev) => {
+                      const updated = [...prev];
+                      const lastIndex = updated.length - 1;
+                      if (updated[lastIndex]?.role === 'assistant') {
+                        updated[lastIndex] = {
+                          ...updated[lastIndex],
+                          actions: [...streamedActions],
+                        };
+                      }
+                      return updated;
+                    });
+                  } else if (currentEvent === 'message') {
+                    // Update with final message
+                    setMessages((prev) => {
+                      const updated = [...prev];
+                      const lastIndex = updated.length - 1;
+                      if (updated[lastIndex]?.role === 'assistant') {
+                        updated[lastIndex] = {
+                          ...updated[lastIndex],
+                          content: data.message,
+                        };
+                      }
+                      return updated;
+                    });
+                    if (data.mode) {
+                      setChatMode(data.mode);
+                    }
+                  } else if (currentEvent === 'error') {
+                    setMessages((prev) => {
+                      const updated = [...prev];
+                      const lastIndex = updated.length - 1;
+                      if (updated[lastIndex]?.role === 'assistant') {
+                        updated[lastIndex] = {
+                          ...updated[lastIndex],
+                          content: `Error: ${data.message}`,
+                        };
+                      }
+                      return updated;
+                    });
+                  }
+                } catch {
+                  // Ignore JSON parse errors
+                }
+                currentEvent = '';
+              }
+            }
+          }
+        }
+      } else {
+        // Fallback to non-streaming response
+        const { data } = await res.json();
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIndex = updated.length - 1;
+          if (updated[lastIndex]?.role === 'assistant') {
+            updated[lastIndex] = {
+              role: 'assistant',
+              content: data.message,
+              actions: data.actions || [],
+            };
+          }
+          return updated;
+        });
+        if (data.mode) {
+          setChatMode(data.mode);
+        }
       }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
-      ]);
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIndex = updated.length - 1;
+        if (updated[lastIndex]?.role === 'assistant') {
+          updated[lastIndex] = {
+            ...updated[lastIndex],
+            content: 'Sorry, I encountered an error. Please try again.',
+          };
+        }
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
@@ -375,45 +473,62 @@ export function ChatPanel() {
           </div>
         ) : (
           <>
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'flex',
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                )}
-              >
+            {messages.map((msg, i) => {
+              const isLastMessage = i === messages.length - 1;
+              const isStreamingMessage = loading && isLastMessage && msg.role === 'assistant';
+              const hasNoContent = !msg.content || msg.content.trim() === '';
+              const hasActions = msg.actions && msg.actions.length > 0;
+
+              return (
                 <div
+                  key={i}
                   className={cn(
-                    'max-w-[90%]',
-                    msg.role === 'user'
-                      ? 'rounded-2xl px-3 py-2 bg-primary text-primary-foreground rounded-br-md'
-                      : ''
+                    'flex',
+                    msg.role === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
-                  {msg.role === 'assistant' ? (
-                    <div className="flex flex-col">
-                      {/* Show action steps if any */}
-                      {msg.actions && msg.actions.length > 0 && (
-                        <ActionSteps actions={msg.actions} />
-                      )}
-                      {/* Message content */}
-                      <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2">
-                        <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-background/50 [&_pre]:p-2 [&_pre]:rounded-lg [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-medium [&_h2]:font-medium [&_h3]:font-medium">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
-                        </div>
+                  <div
+                    className={cn(
+                      'max-w-[90%]',
+                      msg.role === 'user'
+                        ? 'rounded-2xl px-3 py-2 bg-primary text-primary-foreground rounded-br-md'
+                        : ''
+                    )}
+                  >
+                    {msg.role === 'assistant' ? (
+                      <div className="flex flex-col">
+                        {/* Show action steps if any */}
+                        {hasActions && (
+                          <ActionSteps actions={msg.actions!} isStreaming={isStreamingMessage} />
+                        )}
+                        {/* Show thinking indicator while streaming with no content yet */}
+                        {isStreamingMessage && hasNoContent && !hasActions && (
+                          <ThinkingIndicator />
+                        )}
+                        {/* Message content - only show if there's content */}
+                        {!hasNoContent && (
+                          <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2">
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-background/50 [&_pre]:p-2 [&_pre]:rounded-lg [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-medium [&_h2]:font-medium [&_h3]:font-medium">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
+                          </div>
+                        )}
+                        {/* Show thinking indicator while waiting for final message if we have actions */}
+                        {isStreamingMessage && hasNoContent && hasActions && (
+                          <div className="mt-2">
+                            <ThinkingIndicator />
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ) : (
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {msg.content}
-                    </p>
-                  )}
+                    ) : (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {msg.content}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-
-            {loading && <ThinkingIndicator />}
+              );
+            })}
             <div ref={messagesEndRef} />
           </>
         )}
