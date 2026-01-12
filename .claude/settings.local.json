@@ -45,7 +45,10 @@
       "Bash(grep:*)",
       "Bash(npm show:*)",
       "Bash(npm ls:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(powershell:*)",
+      "Bash(curl.exe:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

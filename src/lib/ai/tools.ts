@@ -139,6 +139,148 @@ export const MONTY_TOOLS = [
       required: [],
     },
   },
+  {
+    name: 'get_extracted_data',
+    description: 'Get extracted data from a specific document including covenants, EBITDA definition, addbacks, and financial data.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        document_id: {
+          type: 'string',
+          description: 'The ID of the document to get extracted data from',
+        },
+        document_name: {
+          type: 'string',
+          description: 'Search for document by name (partial match)',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_financial_periods',
+    description: 'Get financial period data including EBITDA, revenue, total debt, and other metrics. Can filter by loan or date range.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        loan_id: {
+          type: 'string',
+          description: 'Filter by specific loan ID',
+        },
+        borrower_name: {
+          type: 'string',
+          description: 'Filter by borrower name',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of periods to return (default 10)',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_borrowers',
+    description: 'Get a list of borrowers with their details. Can search by name or filter by industry.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        search: {
+          type: 'string',
+          description: 'Search borrowers by name',
+        },
+        industry: {
+          type: 'string',
+          description: 'Filter by industry',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of borrowers to return (default 10)',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_ebitda_definition',
+    description: 'Get the EBITDA definition and permitted addbacks for a specific loan.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        loan_id: {
+          type: 'string',
+          description: 'The ID of the loan',
+        },
+        borrower_name: {
+          type: 'string',
+          description: 'Find loan by borrower name',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_covenant_history',
+    description: 'Get the full test history for a specific covenant showing trends over time.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        covenant_id: {
+          type: 'string',
+          description: 'The ID of the covenant',
+        },
+        covenant_name: {
+          type: 'string',
+          description: 'Search by covenant name',
+        },
+        borrower_name: {
+          type: 'string',
+          description: 'Filter by borrower name',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of test results to return (default 12)',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'trigger_extraction',
+    description: 'Trigger document extraction for a specific document. Returns immediately with status.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        document_id: {
+          type: 'string',
+          description: 'The ID of the document to extract',
+        },
+      },
+      required: ['document_id'],
+    },
+  },
+  {
+    name: 'get_audit_log',
+    description: 'Get recent audit log entries showing actions taken in the system.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        action: {
+          type: 'string',
+          description: 'Filter by action type (create, update, delete, extract, etc.)',
+        },
+        entity_type: {
+          type: 'string',
+          description: 'Filter by entity type (loan, document, covenant, alert)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of entries to return (default 20)',
+        },
+      },
+      required: [],
+    },
+  },
 ] as const;
 
 // Tool execution functions
@@ -168,6 +310,20 @@ export async function executeTool(
         return await getUpcomingCovenantTests(supabase, organizationId, toolInput);
       case 'get_documents_needing_review':
         return await getDocumentsNeedingReview(supabase, organizationId);
+      case 'get_extracted_data':
+        return await getExtractedData(supabase, organizationId, toolInput);
+      case 'get_financial_periods':
+        return await getFinancialPeriods(supabase, organizationId, toolInput);
+      case 'get_borrowers':
+        return await getBorrowers(supabase, organizationId, toolInput);
+      case 'get_ebitda_definition':
+        return await getEbitdaDefinition(supabase, organizationId, toolInput);
+      case 'get_covenant_history':
+        return await getCovenantHistory(supabase, organizationId, toolInput);
+      case 'trigger_extraction':
+        return await triggerExtraction(supabase, organizationId, toolInput);
+      case 'get_audit_log':
+        return await getAuditLog(supabase, organizationId, toolInput);
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
@@ -785,4 +941,585 @@ function formatCurrency(amount: number): string {
     return `$${(amount / 1000000).toFixed(1)}M`;
   }
   return `$${amount.toLocaleString()}`;
+}
+
+// ============ NEW TOOLS ============
+
+async function getExtractedData(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  let query = supabase
+    .from('documents')
+    .select(`
+      id,
+      name,
+      type,
+      extraction_status,
+      extraction_method,
+      extracted_data,
+      confidence_scores,
+      loans (name, borrowers (name))
+    `)
+    .eq('organization_id', orgId)
+    .is('deleted_at', null);
+
+  if (input.document_id) {
+    query = query.eq('id', input.document_id);
+  } else if (input.document_name) {
+    query = query.ilike('name', `%${input.document_name}%`);
+  }
+
+  const { data, error } = await query.limit(1).single();
+
+  if (error || !data) {
+    return JSON.stringify({ error: 'Document not found' });
+  }
+
+  interface DocumentWithExtraction {
+    id: string;
+    name: string;
+    type: string;
+    extraction_status: string;
+    extraction_method?: string;
+    extracted_data?: {
+      documentType?: string;
+      borrowerName?: string;
+      facilityName?: string;
+      ebitdaDefinition?: string;
+      ebitdaAddbacks?: Array<{ category: string; description: string; cap?: string }>;
+      covenants?: Array<{
+        name: string;
+        type: string;
+        operator: string;
+        threshold: number;
+        testingFrequency: string;
+        sourceClause?: string;
+      }>;
+      financialData?: Array<{
+        periodEndDate: string;
+        periodType: string;
+        revenue?: number;
+        ebitdaReported?: number;
+        totalDebt?: number;
+      }>;
+      overallConfidence?: number;
+    };
+    confidence_scores?: { overall?: number };
+    loans?: { name: string; borrowers?: { name: string } };
+  }
+
+  const doc = data as unknown as DocumentWithExtraction;
+  const extracted = doc.extracted_data;
+
+  if (!extracted || doc.extraction_status !== 'completed') {
+    return JSON.stringify({
+      document: {
+        id: doc.id,
+        name: doc.name,
+        status: doc.extraction_status,
+      },
+      message: doc.extraction_status === 'pending'
+        ? 'Document has not been extracted yet. Use trigger_extraction to start.'
+        : `Extraction status: ${doc.extraction_status}`,
+    });
+  }
+
+  const result = {
+    document: {
+      id: doc.id,
+      name: doc.name,
+      type: doc.type,
+      borrower: doc.loans?.borrowers?.name || 'Unknown',
+      loan: doc.loans?.name || 'Unknown',
+      extraction_method: doc.extraction_method,
+      confidence: extracted.overallConfidence || doc.confidence_scores?.overall,
+    },
+    ebitda: {
+      definition: extracted.ebitdaDefinition || 'Not found',
+      addbacks: extracted.ebitdaAddbacks?.map(a => ({
+        category: a.category,
+        description: a.description,
+        cap: a.cap || 'No cap',
+      })) || [],
+    },
+    covenants: extracted.covenants?.map(c => ({
+      name: c.name,
+      type: c.type,
+      threshold: `${c.operator === 'max' ? '≤' : '≥'} ${c.threshold}`,
+      frequency: c.testingFrequency,
+      source: c.sourceClause?.substring(0, 200) + (c.sourceClause && c.sourceClause.length > 200 ? '...' : ''),
+    })) || [],
+    financial_data: extracted.financialData?.map(f => ({
+      period: f.periodEndDate,
+      type: f.periodType,
+      revenue: f.revenue ? formatCurrency(f.revenue) : 'N/A',
+      ebitda: f.ebitdaReported ? formatCurrency(f.ebitdaReported) : 'N/A',
+      total_debt: f.totalDebt ? formatCurrency(f.totalDebt) : 'N/A',
+    })) || [],
+  };
+
+  return JSON.stringify(result, null, 2);
+}
+
+async function getFinancialPeriods(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  let query = supabase
+    .from('financial_periods')
+    .select(`
+      id,
+      period_end_date,
+      period_type,
+      revenue,
+      ebitda_reported,
+      total_debt,
+      interest_expense,
+      fixed_charges,
+      current_assets,
+      current_liabilities,
+      net_worth,
+      loans (name, borrowers (name))
+    `)
+    .eq('organization_id', orgId)
+    .order('period_end_date', { ascending: false });
+
+  if (input.loan_id) {
+    query = query.eq('loan_id', input.loan_id);
+  }
+
+  const limit = typeof input.limit === 'number' ? input.limit : 10;
+  const { data, error } = await query.limit(limit);
+
+  if (error) {
+    return JSON.stringify({ error: error.message });
+  }
+
+  interface FinancialPeriod {
+    id: string;
+    period_end_date: string;
+    period_type: string;
+    revenue?: number;
+    ebitda_reported?: number;
+    total_debt?: number;
+    interest_expense?: number;
+    fixed_charges?: number;
+    current_assets?: number;
+    current_liabilities?: number;
+    net_worth?: number;
+    loans?: { name: string; borrowers?: { name: string } };
+  }
+
+  // Filter by borrower name if provided
+  let periods = (data || []) as unknown as FinancialPeriod[];
+  if (input.borrower_name) {
+    const searchName = String(input.borrower_name).toLowerCase();
+    periods = periods.filter(p =>
+      p.loans?.borrowers?.name?.toLowerCase().includes(searchName)
+    );
+  }
+
+  const result = periods.map(p => ({
+    period: p.period_end_date,
+    type: p.period_type,
+    borrower: p.loans?.borrowers?.name || 'Unknown',
+    loan: p.loans?.name || 'Unknown',
+    revenue: p.revenue ? formatCurrency(p.revenue) : 'N/A',
+    ebitda: p.ebitda_reported ? formatCurrency(p.ebitda_reported) : 'N/A',
+    total_debt: p.total_debt ? formatCurrency(p.total_debt) : 'N/A',
+    interest_expense: p.interest_expense ? formatCurrency(p.interest_expense) : 'N/A',
+    current_ratio: p.current_assets && p.current_liabilities
+      ? `${(p.current_assets / p.current_liabilities).toFixed(2)}x`
+      : 'N/A',
+    net_worth: p.net_worth ? formatCurrency(p.net_worth) : 'N/A',
+  }));
+
+  return JSON.stringify({ financial_periods: result, count: result.length }, null, 2);
+}
+
+async function getBorrowers(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  let query = supabase
+    .from('borrowers')
+    .select(`
+      id,
+      name,
+      industry,
+      rating,
+      loans (id, name, status, commitment_amount)
+    `)
+    .eq('organization_id', orgId)
+    .is('deleted_at', null);
+
+  if (input.search) {
+    query = query.ilike('name', `%${input.search}%`);
+  }
+
+  if (input.industry) {
+    query = query.ilike('industry', `%${input.industry}%`);
+  }
+
+  const limit = typeof input.limit === 'number' ? input.limit : 10;
+  const { data, error } = await query.limit(limit);
+
+  if (error) {
+    return JSON.stringify({ error: error.message });
+  }
+
+  interface BorrowerWithLoans {
+    id: string;
+    name: string;
+    industry?: string;
+    rating?: string;
+    loans?: Array<{ id: string; name: string; status: string; commitment_amount: number }>;
+  }
+
+  const borrowers = ((data || []) as unknown as BorrowerWithLoans[]).map(b => ({
+    id: b.id,
+    name: b.name,
+    industry: b.industry || 'Unknown',
+    rating: b.rating || 'Not rated',
+    total_loans: b.loans?.length || 0,
+    total_commitment: formatCurrency(
+      b.loans?.reduce((sum, l) => sum + (Number(l.commitment_amount) || 0), 0) || 0
+    ),
+    active_loans: b.loans?.filter(l => l.status === 'active').length || 0,
+    loan_names: b.loans?.map(l => l.name).join(', ') || 'None',
+  }));
+
+  return JSON.stringify({ borrowers, count: borrowers.length }, null, 2);
+}
+
+async function getEbitdaDefinition(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  // Find the loan first
+  let loanId = input.loan_id as string | undefined;
+
+  if (!loanId && input.borrower_name) {
+    const { data: borrowers } = await supabase
+      .from('borrowers')
+      .select('id')
+      .eq('organization_id', orgId)
+      .ilike('name', `%${input.borrower_name}%`)
+      .limit(1);
+
+    if (borrowers && borrowers.length > 0) {
+      const { data: loans } = await supabase
+        .from('loans')
+        .select('id')
+        .eq('borrower_id', borrowers[0].id)
+        .limit(1);
+
+      if (loans && loans.length > 0) {
+        loanId = loans[0].id;
+      }
+    }
+  }
+
+  if (!loanId) {
+    return JSON.stringify({ error: 'Loan not found. Provide loan_id or borrower_name.' });
+  }
+
+  // Get documents with extracted EBITDA definitions
+  const { data: documents } = await supabase
+    .from('documents')
+    .select(`
+      id,
+      name,
+      extracted_data,
+      loans (name, borrowers (name))
+    `)
+    .eq('loan_id', loanId)
+    .eq('extraction_status', 'completed')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  interface DocWithEbitda {
+    id: string;
+    name: string;
+    extracted_data?: {
+      ebitdaDefinition?: string;
+      ebitdaAddbacks?: Array<{ category: string; description: string; cap?: string; confidence?: number }>;
+    };
+    loans?: { name: string; borrowers?: { name: string } };
+  }
+
+  const docs = (documents || []) as unknown as DocWithEbitda[];
+  const docWithEbitda = docs.find(d => d.extracted_data?.ebitdaDefinition);
+
+  if (!docWithEbitda || !docWithEbitda.extracted_data) {
+    return JSON.stringify({
+      error: 'No EBITDA definition found. Extract a credit agreement document first.',
+      loan: docs[0]?.loans?.name || 'Unknown',
+    });
+  }
+
+  const result = {
+    borrower: docWithEbitda.loans?.borrowers?.name || 'Unknown',
+    loan: docWithEbitda.loans?.name || 'Unknown',
+    source_document: docWithEbitda.name,
+    ebitda_definition: docWithEbitda.extracted_data.ebitdaDefinition,
+    addbacks: docWithEbitda.extracted_data.ebitdaAddbacks?.map(a => ({
+      category: a.category,
+      description: a.description,
+      cap: a.cap || 'No cap specified',
+    })) || [],
+    total_addbacks: docWithEbitda.extracted_data.ebitdaAddbacks?.length || 0,
+  };
+
+  return JSON.stringify(result, null, 2);
+}
+
+async function getCovenantHistory(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  // Find covenant(s) based on input
+  let covenantIds: string[] = [];
+
+  if (input.covenant_id) {
+    covenantIds = [input.covenant_id as string];
+  } else {
+    // Get loans for this org first
+    const { data: loans } = await supabase
+      .from('loans')
+      .select('id, borrowers (name)')
+      .eq('organization_id', orgId)
+      .is('deleted_at', null);
+
+    if (!loans || loans.length === 0) {
+      return JSON.stringify({ error: 'No loans found' });
+    }
+
+    let loanIds = loans.map(l => l.id);
+
+    // Filter by borrower if provided
+    if (input.borrower_name) {
+      interface LoanWithBorrower {
+        id: string;
+        borrowers?: { name: string } | Array<{ name: string }>;
+      }
+      const searchName = String(input.borrower_name).toLowerCase();
+      loanIds = (loans as unknown as LoanWithBorrower[])
+        .filter(l => {
+          const borrower = Array.isArray(l.borrowers) ? l.borrowers[0] : l.borrowers;
+          return borrower?.name?.toLowerCase().includes(searchName);
+        })
+        .map(l => l.id);
+    }
+
+    // Get covenants
+    let covenantQuery = supabase
+      .from('covenants')
+      .select('id, name')
+      .in('loan_id', loanIds)
+      .is('deleted_at', null);
+
+    if (input.covenant_name) {
+      covenantQuery = covenantQuery.ilike('name', `%${input.covenant_name}%`);
+    }
+
+    const { data: covenants } = await covenantQuery.limit(1);
+    covenantIds = (covenants || []).map(c => c.id);
+  }
+
+  if (covenantIds.length === 0) {
+    return JSON.stringify({ error: 'Covenant not found' });
+  }
+
+  const limit = typeof input.limit === 'number' ? input.limit : 12;
+
+  const { data: tests, error } = await supabase
+    .from('covenant_tests')
+    .select(`
+      id,
+      calculated_value,
+      threshold_at_test,
+      status,
+      headroom_percentage,
+      tested_at,
+      covenants (
+        name,
+        type,
+        operator,
+        loans (name, borrowers (name))
+      )
+    `)
+    .in('covenant_id', covenantIds)
+    .order('tested_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return JSON.stringify({ error: error.message });
+  }
+
+  interface TestHistory {
+    calculated_value: number;
+    threshold_at_test: number;
+    status: string;
+    headroom_percentage: number;
+    tested_at: string;
+    covenants?: {
+      name: string;
+      type: string;
+      operator: string;
+      loans?: { name: string; borrowers?: { name: string } };
+    };
+  }
+
+  const history = ((tests || []) as unknown as TestHistory[]).map(t => ({
+    date: t.tested_at,
+    value: `${t.calculated_value?.toFixed(2)}x`,
+    threshold: `${t.covenants?.operator === 'max' ? '≤' : '≥'} ${t.threshold_at_test}x`,
+    status: t.status,
+    headroom: `${t.headroom_percentage?.toFixed(1)}%`,
+  }));
+
+  const firstTest = tests?.[0] as unknown as TestHistory | undefined;
+  const covenantInfo = firstTest?.covenants;
+
+  const result = {
+    covenant: covenantInfo?.name || 'Unknown',
+    type: covenantInfo?.type || 'Unknown',
+    borrower: covenantInfo?.loans?.borrowers?.name || 'Unknown',
+    loan: covenantInfo?.loans?.name || 'Unknown',
+    history,
+    total_tests: history.length,
+    trend: history.length >= 2
+      ? (parseFloat(history[0].value) > parseFloat(history[1].value) ? 'increasing' : 'decreasing')
+      : 'insufficient data',
+  };
+
+  return JSON.stringify(result, null, 2);
+}
+
+async function triggerExtraction(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  if (!input.document_id) {
+    return JSON.stringify({ error: 'document_id is required' });
+  }
+
+  // Verify document exists and belongs to org
+  const { data: doc, error: docError } = await supabase
+    .from('documents')
+    .select('id, name, extraction_status')
+    .eq('id', input.document_id)
+    .eq('organization_id', orgId)
+    .is('deleted_at', null)
+    .single();
+
+  if (docError || !doc) {
+    return JSON.stringify({ error: 'Document not found' });
+  }
+
+  interface DocumentStatus {
+    id: string;
+    name: string;
+    extraction_status: string;
+  }
+
+  const document = doc as unknown as DocumentStatus;
+
+  if (document.extraction_status === 'processing') {
+    return JSON.stringify({
+      status: 'already_processing',
+      message: `Document "${document.name}" is already being extracted. Please wait.`,
+    });
+  }
+
+  if (document.extraction_status === 'completed') {
+    return JSON.stringify({
+      status: 'already_completed',
+      message: `Document "${document.name}" has already been extracted. Use get_extracted_data to view results.`,
+    });
+  }
+
+  // Update status to processing
+  await supabase
+    .from('documents')
+    .update({ extraction_status: 'processing' } as never)
+    .eq('id', input.document_id);
+
+  return JSON.stringify({
+    status: 'triggered',
+    document_id: document.id,
+    document_name: document.name,
+    message: `Extraction triggered for "${document.name}". This may take 15-30 seconds. Use get_extracted_data to check results.`,
+    note: 'The extraction runs asynchronously. Check back shortly for results.',
+  });
+}
+
+async function getAuditLog(
+  supabase: SupabaseClient,
+  orgId: string,
+  input: Record<string, unknown>
+): Promise<string> {
+  let query = supabase
+    .from('audit_logs')
+    .select(`
+      id,
+      action,
+      entity_type,
+      entity_id,
+      changes,
+      created_at,
+      users (full_name, email)
+    `)
+    .eq('organization_id', orgId)
+    .order('created_at', { ascending: false });
+
+  if (input.action) {
+    query = query.eq('action', input.action);
+  }
+
+  if (input.entity_type) {
+    query = query.eq('entity_type', input.entity_type);
+  }
+
+  const limit = typeof input.limit === 'number' ? input.limit : 20;
+  const { data, error } = await query.limit(limit);
+
+  if (error) {
+    return JSON.stringify({ error: error.message });
+  }
+
+  interface AuditEntry {
+    id: string;
+    action: string;
+    entity_type: string;
+    entity_id: string;
+    changes?: Record<string, unknown>;
+    created_at: string;
+    users?: { full_name?: string; email?: string };
+  }
+
+  const logs = ((data || []) as unknown as AuditEntry[]).map(log => ({
+    timestamp: log.created_at,
+    user: log.users?.full_name || log.users?.email || 'System',
+    action: log.action,
+    entity: `${log.entity_type}:${log.entity_id.substring(0, 8)}...`,
+    details: log.changes ? summarizeChanges(log.changes) : 'No details',
+  }));
+
+  return JSON.stringify({ audit_logs: logs, count: logs.length }, null, 2);
+}
+
+function summarizeChanges(changes: Record<string, unknown>): string {
+  const keys = Object.keys(changes);
+  if (keys.length === 0) return 'No changes';
+  if (keys.length <= 3) return keys.join(', ');
+  return `${keys.slice(0, 3).join(', ')} +${keys.length - 3} more`;
 }
